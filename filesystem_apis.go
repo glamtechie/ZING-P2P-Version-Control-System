@@ -22,3 +22,19 @@ func zing_pull(branch string) {
 	}
 	fmt.Printf("%s\n", out)
 }
+
+func zing_add(filename string) {
+	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_add.sh", filename).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", out)
+}
+
+func zing_commit() {
+	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_commit.sh").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", out)
+}
