@@ -14,3 +14,11 @@ func zing_init(id int) {
 	}
 	fmt.Printf("%s\n", out)
 }
+
+func zing_pull(branch string) {
+	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_pull.sh", branch).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", out)
+}
