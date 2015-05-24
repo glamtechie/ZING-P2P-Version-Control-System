@@ -38,3 +38,11 @@ func zing_commit() {
 	}
 	fmt.Printf("%s\n", out)
 }
+
+func zing_make_patch_for_push(branch string, patchname string) {
+	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_make_patch_for_push.sh", branch, patchname).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", out)
+}
