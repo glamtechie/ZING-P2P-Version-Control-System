@@ -22,7 +22,8 @@ echo "ID:#" > config
 #global dir that hold the pushes
 mkdir global && cd global;
 git init &> /dev/null;
-
+git commit --allow-empty --allow-empty-message -m '' &> /dev/null
+git tag -a -m '' ROOT
 popd &> /dev/null;
 
 
