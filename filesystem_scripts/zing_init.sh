@@ -5,6 +5,8 @@ git init &> /dev/null;
 
 #Add .zing dir that will contain all metadata to gitignore
 echo ".zing" > .gitignore
+echo ".gitignore" >> .gitignore
+
 if [ -d ".zing" ]; then
     rm -rf .zing
     echo "Reinitialized existing zing repository in $PWD/.zing"
@@ -24,6 +26,8 @@ mkdir global && cd global;
 git init &> /dev/null;
 git commit --allow-empty --allow-empty-message -m '' &> /dev/null
 git tag -a -m '' ROOT
-popd &> /dev/null;
 
+popd &> /dev/null
+
+git pull .zing/global master
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-git log;
+git log | sed "s/git/zing/g";
 
 
 

@@ -1,6 +1,5 @@
 #!/bin/bash
 
-git status;
-
+git status | sed "s/git/zing/g"
 
 
