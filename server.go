@@ -66,33 +66,65 @@ func (self *Server) ReceivePrepare(prepare *Version, succ *bool) error {
 		*succ = false
 	}
 
+	// I am not sure about the indent
+	if len(self.preQueue) == 0 {
+		fmt.Println("wrong")
+	}
+
 	self.preQueue = append(self.preQueue, *prepare)
 	return nil
 }
 
 
+var GlobalBuffer []*Push
+var IndexList    []int
+func processChanges(push *Push, index int) []*Push {
+	insertPoint := -1
+	for key, value := range IndexList {
+		if index < value {
+			insertPoint = key
+			break
+		}
+	}
+
+	if insertPoint == -1 {
+		insertPoint = len(IndexList)
+	}
+	IndexList    = append(IndexList[:insertPoint],    append([]int{index}, IndexList[insertPoint:]...)...)
+	GlobalBuffer = append(GlobalBuffer[:insertPoint], append([]*Push{push}, GlobalBuffer[insertPoint:]...)...)
+
+	if IndexList[0] == 0 {
+		cutPoint := 1
+		for i := 1; i < len(IndexList); i++ {
+			if IndexList[i] - IndexList[i - 1] != 1 {
+				cutPoint = i 
+				break
+			}
+		}
+		results := GlobalBuffer[:cutPoint]
+
+		IndexList    = IndexList[cutPoint:]
+		GlobalBuffer = GlobalBuffer[cutPoint:]
+		return results
+	} else {
+		return make([]*Push, 0)
+	}
+}
+
+
+func (self *Server) commitChanges(pushes []*Push) error {
+	// commit the pushes to the file system
+	return nil
+}
+
 /*
  RPC function: ReceivePush
 */
 func (self *Server) ReceivePush(push *Push, succ *bool) error {	
-	index := -1
-	self.lock.Lock()
-	for i, prepare := range self.preQueue {
-		if VersionEquality(prepare, push.Change) {
-			index = i
-			break
-		}
-	}
-	self.lock.Unlock()
-	if index == -1 {
-		panic("No match prepare message")
-	} else {
-		// TODO: main logic here	
-	}
+	var index int = -1
+	var pushes []*Push 
 
-	// after handling the push, clean the prepare queue
 	self.lock.Lock()
-	index = -1
 	for i, prepare := range self.preQueue {
 		if VersionEquality(prepare, push.Change) {
 			index = i
@@ -102,10 +134,12 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	if index == -1 {
 		panic("No match prepare message")
 	} else {
-		self.preQueue = append(self.preQueue[:index], self.preQueue[index+1:]...)
+		pushes = processChanges(push, index)
 	}
 	self.lock.Unlock()
 	
+	// commit the changes
+	self.commitChanges(pushes)
 	*succ = true
 	return nil
 }
