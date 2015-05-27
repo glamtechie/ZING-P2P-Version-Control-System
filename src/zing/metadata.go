@@ -3,15 +3,16 @@ package zing
 import (
 	"os"
 	"strconv"
+	"fmt"
 )
 
 func GetIPList(filename string) []string {
 	//return []string{}
-	return []string{"137.110.91.41:27321", "137.110.90.199:27321", "137.110.92.134:27321" }
+	return []string{"137.110.90.199:27321", "137.110.90.91:27321" }
 }
 
 func GetIndexNumber(filename string) int {
-	return 1
+	return 0
 }
 
 func GetVersionNumber(filename string) int {
@@ -21,9 +22,11 @@ func GetVersionNumber(filename string) int {
 		return 0
 	}
 
-	data := make([]byte, 8)
+	data := make([]byte, 32)
 	file.Read(data)
 	result, _ := strconv.ParseInt(string(data), 10, 32)
+	fmt.Println("version number: ", result)
+	file.Close()
 	return int(result)
 }
 
@@ -35,5 +38,6 @@ func SetVersionNumber(filename string, version int) {
 
 	data := []byte(strconv.Itoa(version))
 	file.Write(data)
+	file.Close()
 	return 
 }

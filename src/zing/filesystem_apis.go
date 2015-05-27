@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io"
 	"os/exec"
 	"strconv"
 
@@ -113,14 +114,21 @@ func zing_read_patch(patchname string) []byte {
 	}
 
 	result := make([]byte, 0)
-	data := make([]byte, 100)
-	count := 100
+	data   := make([]byte, 100)
+	count  := 100
+	offset := 0
 	for count == 100 {
-		count, err = file.Read(data)
+		count, err = file.ReadAt(data, offset)
 		if err != nil {
-			panic("Read file error")
+			if err == io.EOF {
+				result = append(result, data...)
+				break
+			} else {
+				panic("Read file error")
+			} 
 		} else {
 			result = append(result, data...)
+			offset += count	
 		}
 	}
 
