@@ -22,7 +22,7 @@ func InitializeClient(fileName string) *Client {
 	client.addressList = GetIPList(fileName)
 
 	client.server = client.addressList[client.id]
-	SetVersionNumber("VersionNumber", 0)
+	//SetVersionNumber("VersionNumber", 0)
 	return &client
 }
 
@@ -49,7 +49,7 @@ func (self *Client) Push() error {
 		return errors.New("Another push in progress, please pull and try again!")
 	}
 	
-	cversion := GetVersionNumber("VersionNumber");
+	cversion     := GetVersionNumber("VersionNumber");
 	succ, bitMap := self.sendPrepare(&Version{self.id, cversion})
 	count := 0
 	for i := 0; i < len(bitMap); i++ {
