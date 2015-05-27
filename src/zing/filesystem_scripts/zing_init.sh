@@ -26,8 +26,8 @@ mkdir global && cd global;
 git init &> /dev/null;
 git commit --allow-empty --allow-empty-message -m '' &> /dev/null
 git tag -a -m '' ROOT
-
+git config receive.denyCurrentBranch ignore
 popd &> /dev/null
 
 git pull .zing/global master
-
+git remote add origin .zing/global/

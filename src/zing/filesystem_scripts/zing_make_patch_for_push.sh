@@ -7,7 +7,7 @@ pushd . &> /dev/null;
 cd .zing/global;
 
 temp_head_first=`git log --pretty=oneline | sed -n '1p' | awk '{print $1}'`
-
+echo $temp_head_first
 git checkout -b temp &> /dev/null;
 
 git pull ../../ $1  &> /dev/null;
