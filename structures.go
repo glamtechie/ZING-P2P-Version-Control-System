@@ -31,7 +31,7 @@ type Push struct {
 	Change Version
 
 	// a list of diff files, map from filename to diff.
-	DiffList map[string]string
+	patch []byte
 }
 
 func SendPrepare(address string, prepare *Version, succ *bool) error {

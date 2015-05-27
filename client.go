@@ -36,12 +36,36 @@ func (self *Client) Add(filename string)error{
 }
 
 func (self *Client) Push()error{
-	status,bitMap:=sendPrepare(&Version{self.id,self.cversion+1})
+	status:=CheckPrepareQueue(self.server)
+	if status==false{
+		return errors.New("Another push in progress, please pull and try again!")
+	}
+	status,bitMap:=self.sendPrepare(&Version{self.id,self.cversion+1})
+	count:=0
+	for i:=0;i<len(bitMap);i++{
+		if bitMap[i]{
+			count++
+		}
+	}
+	if (status==false)||(count<=len(bitMap)/2) {
+		 self.sendAbort(bitMap)
+		 return nil
+	}
+
+
+	data,e:=zing_make_patch_for_push("master","patch")
+	if e!=nil{
+		return e
+	}
+	self.cversion=self.cversion+1
+	self.sendPush(&Push{&Version{self.id,self.cversion},data},bitMap)
+	return nil
 }
 
 func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
-	firstNode  := true
+	firstNode  := false
 	firstIndex := -1
+	//count:=0
 	succeed    := false
 	liveBitMap := make([]bool, len(self.addressList))
 
@@ -54,15 +78,17 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 		if e != nil {
 			liveBitMap[i] = false
 		} else {
-			if firstNode {
+			if !firstNode {
 				succeed    = succ
 				firstNode  = false
 				firstIndex = i
 			}
+			//count++
 			liveBitMap[i] = true
 		}
 	}
 
+	/*
 	if firstIndex != -1 {
 		version := Version{NodeIndex: -1, VersionIndex: -1}
 		succ    := false
@@ -70,7 +96,9 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 		if e != nil {
 			succeed = false
 		}
-	}
+	}*/
+
+
 
 	// TODO: write self.addressList back to metadata file
 	return succeed, liveBitMap
@@ -92,7 +120,10 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 	}
 }
 
-
+func (self *Client) sendAbort(liveBitMap []bool)error{
+	ar:=make([]byte,0)
+	self.sendPush(&Push{&Version{self.id,self.cversion},ar},liveBitMap)
+}
 
 func (self *Client) comeAlive() {
 	ipchange := IPChange{Index: self.ID, IP: self.server}
