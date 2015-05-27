@@ -1,5 +1,8 @@
 package zing
 
+import (
+	"errors"
+)
 type Client struct {
 	// my index number
 	id	int
@@ -53,12 +56,12 @@ func (self *Client) Push()error{
 	}
 
 
-	data,e:=zing_make_patch_for_push("master","patch")
+	e,data:=zing_make_patch_for_push("master","patch")
 	if e!=nil{
 		return e
 	}
 	self.cversion=self.cversion+1
-	self.sendPush(&Push{&Version{self.id,self.cversion},data},bitMap)
+	self.sendPush(&Push{Version{self.id,self.cversion},data},bitMap)
 	return nil
 }
 
@@ -120,13 +123,14 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 	}
 }
 
-func (self *Client) sendAbort(liveBitMap []bool)error{
+func (self *Client) sendAbort(liveBitMap []bool){
 	ar:=make([]byte,0)
-	self.sendPush(&Push{&Version{self.id,self.cversion},ar},liveBitMap)
+	self.sendPush(&Push{Version{self.id,self.cversion},ar},liveBitMap)
 }
 
+/*
 func (self *Client) comeAlive() {
-	ipchange := IPChange{Index: self.ID, IP: self.server}
+	ipchange := IPChange{Index: self.id, IP: self.server}
 
 	// tell everybody I am alive
 	for i := 0; i < len(self.addressList); i++ {
@@ -137,7 +141,7 @@ func (self *Client) comeAlive() {
 
 	succeed := false
 	bitMap  := make([]bool, 0)
-	prepare := Version{NodeIndex: self.ID, VersionIndex: -1}
+	prepare := Version{NodeIndex: self.id, VersionIndex: -1}
 	pushes  := Push{Change: prepare, DiffList: make(map[string]string)}
 	for {
 		succeed, bitMap = self.sendPrepare(&prepare)
@@ -152,5 +156,5 @@ func (self *Client) comeAlive() {
 	SetReady(self.server, self.server, &succ)
 	self.sendPush(&pushes, bitMap)
 }
-
+*/
 
