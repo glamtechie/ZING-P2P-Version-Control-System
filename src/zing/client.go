@@ -49,7 +49,7 @@ func (self *Client) Push() error {
 		return errors.New("Another push in progress, please pull and try again!")
 	}
 	
-	cversion     := GetVersionNumber("VersionNumber");
+	cversion     := GetVersionNumber(".zing/VersionNumber");
 	succ, bitMap := self.sendPrepare(&Version{self.id, cversion})
 	count := 0
 	for i := 0; i < len(bitMap); i++ {
@@ -67,7 +67,7 @@ func (self *Client) Push() error {
 		return e
 	}
 
-	SetVersionNumber("VersionNumber", cversion + 1)
+	SetVersionNumber(".zing/VersionNumber", cversion + 1)
 	self.sendPush(&Push{Version{self.id, cversion}, data}, bitMap)
 	return nil
 }
