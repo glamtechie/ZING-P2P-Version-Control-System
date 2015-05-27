@@ -3,7 +3,6 @@ package zing
 import (
 	"os"
 	"strconv"
-	"fmt"
 	"bytes"
 )
 
