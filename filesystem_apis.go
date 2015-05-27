@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"os"
 	"strconv"
 )
 
@@ -71,6 +72,10 @@ func zing_delete_branch(branch string) error {
 	return nil
 }
 
+func zing_patch_path(patchname string) string {
+	return ".zing/global/" + patchname
+}
+
 func zing_abort_push() {
 	//TODO: ?
 }
@@ -84,3 +89,43 @@ func zing_process_push(patchname string) error {
 	fmt.Printf("%s\n", out)
 	return nil
 }
+
+func zing_read_patch(patchname string) []byte {
+	filepath  := zing_patch_path(patchname)
+	file, err := os.Open(filepath) // For read access.
+	if err != nil {
+		panic("Can't open the patch file")
+	}
+
+	result := make([]byte, 0)
+	data   := make([]byte, 100)
+	count  := 100
+	for count == 100 {
+		count, err = file.Read(data)
+		if err != nil {
+			panic("Read file error")
+		} else {
+			result = append(result, data...)
+		}
+	}
+
+	file.Close()
+	return result
+}
+
+func zing_write_patch(patchname string, filecontent []byte) {
+	filepath  := zing_patch_path(patchname)
+	file, err := os.Create(filepath) // For read access.
+	if err != nil {
+		panic("Can't create the patch file")
+	}
+
+	count, e := file.Write(filecontent)
+	if e != nil || count != len(filecontent) {
+		panic("Write file error")
+	}
+
+	file.Close()
+	return	
+}
+
