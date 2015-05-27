@@ -2,13 +2,16 @@ package zing
 
 type Client struct {
 	// my index number
-	ID	int
+	id	int
 
-	// the ip addres of my server 
+	// the ip addres of my server
 	server	string
 
 	// the ip address of all the server
 	addressList []string
+
+	//current version
+	cversion int
 }
 
 
@@ -17,18 +20,37 @@ func InitializeClient(fileName string) *Client {
 	return nil
 }
 
+func (self *Client) Pull()error{
+	e:=zing_pull("master")
+	return e
+}
+
+func (self *Client) Commit()error{
+	e:=zing_commit()
+	return e
+}
+
+func (self *Client) Add(filename string)error{
+	e:=zing_add(filename)
+	return e
+}
+
+func (self *Client) Push()error{
+	status,bitMap:=sendPrepare(&Version{self.id,self.cversion+1})
+}
+
 func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 	firstNode  := true
 	firstIndex := -1
 	succeed    := false
 	liveBitMap := make([]bool, len(self.addressList))
-	
+
 	// send prepare message from first to last
 	for i := 0; i < len(self.addressList); i++ {
 		address := self.addressList[i]
 		succ    := false
 		e       := SendPrepare(address, prepare, &succ)
-		
+
 		if e != nil {
 			liveBitMap[i] = false
 		} else {
@@ -37,7 +59,7 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 				firstNode  = false
 				firstIndex = i
 			}
-			liveBitMap[i] = true	
+			liveBitMap[i] = true
 		}
 	}
 
@@ -72,10 +94,10 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 
 
 
-func (self *Client) comeAlive() {	
-	ipchange := IPChange{Index: self.ID, IP: self.server}	
+func (self *Client) comeAlive() {
+	ipchange := IPChange{Index: self.ID, IP: self.server}
 
-	// tell everybody I am alive	
+	// tell everybody I am alive
 	for i := 0; i < len(self.addressList); i++ {
 		address := self.addressList[i]
 		succ    := false

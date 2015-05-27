@@ -101,7 +101,9 @@ func SetReady(address, ip string, succ *bool) error {
 	return conn.Close()
 }
 
+func CheckPrepareQueue(server string)bool{
 
+}
 
 
 
