@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func runPrompt (client *Client, cmd string){
+func runPrompt (client *zing.Client, cmd string){
 	var v error
 	switch cmd {
 	case "commit":
@@ -25,7 +25,7 @@ func runPrompt (client *Client, cmd string){
 	}
 }
 
-func runCmd(client *Client, cmd string, args []string){
+func runCmd(client *zing.Client, cmd string, args []string){
 	var v error
 	switch cmd{
 	case "add":
@@ -62,7 +62,7 @@ func main() {
 	}
 
 	cmd:=args[0]
-	client:=InitializeClient("info.txt")
+	client:=zing.InitializeClient("info.txt")
 	cmdArgs := args[1:]
 	if len(cmdArgs) == 0 {
 		runPrompt(client,cmd)
