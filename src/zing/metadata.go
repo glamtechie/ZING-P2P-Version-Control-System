@@ -42,7 +42,7 @@ func SetVersionNumber(filename string, version int) {
 
 	data := []byte(strconv.Itoa(version))
 	file.Write(data)
-<<<<<<< HEAD
+
 	return
 }
 
