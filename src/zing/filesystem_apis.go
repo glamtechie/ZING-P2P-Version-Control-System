@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io"
 	"os/exec"
 	"strconv"
 
@@ -13,8 +14,11 @@ const (
 	TEMP = "temp"
 )
 
+// this path need changes
+var absPath string = "/Users/Vector/Workspace/Spring 2015/Distributed System/P2P-Version-Control-System/src/zing/"
+
 func zing_init(id int) error {
-	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_init.sh", strconv.Itoa(id)).Output()
+	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_init.sh", strconv.Itoa(id)).Output()
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -24,7 +28,7 @@ func zing_init(id int) error {
 }
 
 func zing_pull(branch string) error {
-	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_pull.sh", branch).Output()
+	out, err := exec.Command("/bin/sh", absPath +  "filesystem_scripts/zing_pull.sh", branch).Output()
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -34,7 +38,7 @@ func zing_pull(branch string) error {
 }
 
 func zing_add(filename string) error {
-	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_add.sh", filename).Output()
+	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_add.sh", filename).Output()
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -44,7 +48,7 @@ func zing_add(filename string) error {
 }
 
 func zing_commit() error {
-	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_commit.sh").Output()
+	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_commit.sh").Output()
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -54,7 +58,7 @@ func zing_commit() error {
 }
 
 func zing_make_patch_for_push(branch string, patchname string) (error, []byte) {
-	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_make_patch_for_push.sh", branch, patchname).Output()
+	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_make_patch_for_push.sh", branch, patchname).Output()
 	b_array := make([]byte, 0)
 	if err != nil {
 		log.Fatal(err)
@@ -86,7 +90,7 @@ func zing_abort_push() {
 func zing_process_push(patchname string, filecontent []byte) error {
 	zing_write_patch(patchname, filecontent)
 
-	out, err := exec.Command("/bin/sh", "filesystem_scripts/zing_process_push.sh", patchname).Output()
+	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_process_push.sh", patchname).Output()
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -110,14 +114,21 @@ func zing_read_patch(patchname string) []byte {
 	}
 
 	result := make([]byte, 0)
-	data := make([]byte, 100)
-	count := 100
-	for count == 100 {
-		count, err = file.Read(data)
+	data   := make([]byte, 100)
+	count  := 100
+	var offset int64 = 0
+	for {
+		count, err = file.ReadAt(data, offset)
 		if err != nil {
-			panic("Read file error")
+			if err == io.EOF {
+				result = append(result, data...)
+				break
+			} else {
+				panic("Read file error")
+			} 
 		} else {
 			result = append(result, data...)
+			offset += int64(count)	
 		}
 	}
 

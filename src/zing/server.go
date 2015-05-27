@@ -64,6 +64,8 @@ func (self *Server) ReceivePrepare(prepare *Version, succ *bool) error {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
+	fmt.Printf("Receive the prepare, Node: %d, Version: %d\n", prepare.NodeIndex, prepare.VersionIndex)
+
 	// the server is not ready
 	if !self.ready {
 		return fmt.Errorf("Server not ready")
@@ -134,6 +136,9 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	var index int = -1
 	var pushes []*Push 
 
+	fmt.Printf("Receive the Push from Node: %d, Version: %d\n", push.Change.NodeIndex, push.Change.VersionIndex)
+	fmt.Printf("Patch length: %d\n", len(push.Patch))
+
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -152,7 +157,7 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	// commit the changes
 	self.commitChanges(pushes)
 	if len(pushes) > 0 {
-		self.preQueue = self.preQueue[:len(pushes)]
+		self.preQueue = self.preQueue[len(pushes):]
 	}
 	*succ = true
 	return nil
