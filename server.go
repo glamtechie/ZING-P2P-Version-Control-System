@@ -11,7 +11,7 @@ import (
 
 type Server struct {
 	// my index number
-	ID	 int
+	id	 int
 
 	// my ip address
 	address  string
@@ -26,10 +26,23 @@ type Server struct {
 	ready	 bool
 }
 
+// global variable
+var (
+	GlobalBuffer []*Push
+	IndexList    []int
+)
+
 
 func InitializeServer(fileName string) *Server {
-	// TODO: read the metadata from a file to initialize the Server
-	return nil
+	server := Server{}
+	server.id = GetIndexNumber(fileName)
+	
+	addressList := GetIPList(fileName)
+	server.address  = addressList[server.id]
+	server.preQueue = make([]Version, 0)
+	server.lock     = &sync.Mutex{}
+	server.ready    = true
+	return &server
 }
 
 func StartServer(instance *Server) error {
@@ -65,19 +78,10 @@ func (self *Server) ReceivePrepare(prepare *Version, succ *bool) error {
 	} else {
 		*succ = false
 	}
-
-	// I am not sure about the indent
-	if len(self.preQueue) == 0 {
-		fmt.Println("wrong")
-	}
-
 	self.preQueue = append(self.preQueue, *prepare)
 	return nil
 }
 
-
-var GlobalBuffer []*Push
-var IndexList    []int
 func processChanges(push *Push, index int) []*Push {
 	insertPoint := -1
 	for key, value := range IndexList {
@@ -114,6 +118,12 @@ func processChanges(push *Push, index int) []*Push {
 
 func (self *Server) commitChanges(pushes []*Push) error {
 	// commit the pushes to the file system
+	for _, push := range pushes {
+		e := zing_process_push("patch", push.Patch)
+		if e != nil {
+			panic("commit change error")
+		}
+	}
 	return nil
 }
 
@@ -125,6 +135,8 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	var pushes []*Push 
 
 	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	for i, prepare := range self.preQueue {
 		if VersionEquality(prepare, push.Change) {
 			index = i
@@ -136,10 +148,12 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	} else {
 		pushes = processChanges(push, index)
 	}
-	self.lock.Unlock()
 	
 	// commit the changes
 	self.commitChanges(pushes)
+	if len(pushes) > 0 {
+		self.preQueue = self.preQueue[:len(pushes)]
+	}
 	*succ = true
 	return nil
 }
@@ -172,4 +186,18 @@ func (self *Server) ReceiveIPChange(ipchange *IPChange, succ *bool) error {
 }
 
 
+func (self *Server) PrepareQueueCheck(address string, result *bool) error {
+	if address != self.address {
+		panic("Not come from my self")
+	}
 
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	if len(self.preQueue) != 0 {
+		*result = false
+	} else {
+		*result = true
+	}
+	return nil
+}

@@ -31,7 +31,7 @@ type Push struct {
 	Change Version
 
 	// a list of diff files, map from filename to diff.
-	patch []byte
+	Patch []byte
 }
 
 func SendPrepare(address string, prepare *Version, succ *bool) error {
@@ -86,7 +86,6 @@ func SendIPChange(address string, ipchange *IPChange, succ *bool) error {
 	return conn.Close()
 }
 
-
 func SetReady(address, ip string, succ *bool) error {
 	conn, e := rpc.DialHTTP("tcp", address)
 	if e != nil {
@@ -101,8 +100,18 @@ func SetReady(address, ip string, succ *bool) error {
 	return conn.Close()
 }
 
-func CheckPrepareQueue(server string)bool{
+func CheckPrepareQueue(address, ip string, result *bool) error {
+	conn, e := rpc.DialHTTP("tcp", address)
+	if e != nil {
+		return e
+	}
 
+	e = conn.Call("Server.PrepareQueueCheck", ip, result)
+	if e != nil {
+		conn.Close()
+		return e
+	}
+	return conn.Close()
 }
 
 
