@@ -117,7 +117,7 @@ func zing_read_patch(patchname string) []byte {
 	data   := make([]byte, 100)
 	count  := 100
 	var offset int64 = 0
-	for count == 100 {
+	for {
 		count, err = file.ReadAt(data, offset)
 		if err != nil {
 			if err == io.EOF {
