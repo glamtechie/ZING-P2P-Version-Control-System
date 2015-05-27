@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"fmt"
+	"bytes"
 )
 
 func GetIPList(filename string) []string {
@@ -18,16 +19,15 @@ func GetIndexNumber(filename string) int {
 func GetVersionNumber(filename string) int {
 	file, e := os.Open(filename)
 	if e != nil {
-		//panic("Can't open the metadata file")
 		return 0
 	}
-
-	data := make([]byte, 32)
+	data := make([]byte, 16)
 	file.Read(data)
-	result, _ := strconv.ParseInt(string(data), 10, 32)
-	fmt.Println("version number: ", result)
+
+	tail 	  := bytes.Index(data, []byte{0})
+	result, _ := strconv.Atoi(string(data[:tail]))
 	file.Close()
-	return int(result)
+	return result
 }
 
 func SetVersionNumber(filename string, version int) {
