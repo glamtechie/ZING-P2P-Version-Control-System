@@ -3,7 +3,11 @@
 #1 == patchname
 pushd . &> /dev/null
 
-git push origin master
+cd .zing/global
+git checkout master;
+
+git pull ../../ $1;
+
 
 popd &> /dev/null
 
