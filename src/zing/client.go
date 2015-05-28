@@ -50,7 +50,8 @@ func (self *Client) Push() error {
 	}
 	
 	cversion     := GetVersionNumber(".zing/VersionNumber");
-	succ, bitMap := self.sendPrepare(&Version{self.id, cversion})
+	prepare      := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
+	succ, bitMap := self.sendPrepare(&prepare)
 	count := 0
 	for i := 0; i < len(bitMap); i++ {
 		if bitMap[i] {
@@ -68,7 +69,7 @@ func (self *Client) Push() error {
 	}
 
 	SetVersionNumber(".zing/VersionNumber", cversion + 1)
-	self.sendPush(&Push{Version{self.id, cversion}, data}, bitMap)
+	self.sendPush(&Push{Change: prepare, Patch: data}, bitMap)
 	return nil
 }
 
@@ -129,30 +130,18 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 
 func (self *Client) sendAbort(liveBitMap []bool, cversion int) {
 	ar := make([]byte, 0)
-	self.sendPush(&Push{Version{self.id, cversion}, ar}, liveBitMap)
+	vr := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
+	self.sendPush(&Push{Change: vr, Patch: ar}, liveBitMap)
 }
 
 
-/*
-func (self *Client) comeAlive(ip string) bool {
-	ipchange := IPChange{Index: self.id, IP: self.server}
-	iplist   := make([]string, 0)
-	e := SendIPChange(ip, ipchange, &iplist)
-	if e != nil {
-		return false
-	}
-
-	for i := 0; i < len(self.addressList); i++ {
-		address := self.addressList[i]
-		succ    := false
-		SendIPChange(address, &ipchange, &succ)
-	}
-
+func (self *Client) comeAlive() {
 	succeed := false
 	bitMap  := make([]bool, 0)
-	prepare := Version{NodeIndex: self.id, VersionIndex: -1}
-	pushes  := Push{Change: prepare, DiffList: make(map[string]string)}
-	for {
+	prepare := Version{NodeIndex: self.id, VersionIndex: -1, NodeAddress: self.server}
+	pushes  := Push{Change: prepare, Patch: []byte{}}
+	
+	for {		// try to go through this competing push
 		succeed, bitMap = self.sendPrepare(&prepare)
 		if succeed {
 			break
@@ -161,10 +150,57 @@ func (self *Client) comeAlive(ip string) bool {
 		}
 	}
 
+	// here we read missing data from some node
+	for key, address := range self.addressList {
+		if bitMap[key] {
+			e := ReadMissingData(address)
+			if e == nil {
+				break
+			}
+		}
+	}
+
 	succ := false
 	SetReady(self.server, self.server, &succ)
 	self.sendPush(&pushes, bitMap)
 }
-*/
 
+// new node join the group
+// don't use this function yet
+func (self *Client) joinGroup(address string) bool {	
+	ipList := make([]string, 0)
+	err    := RequestAddressList(address, self.server, &ipList)
+	if err != nil {
+		return false
+	}
+ 
+ 	succeed := false
+	bitMap  := make([]bool, 0)
+	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
+	pushes  := Push{Change: prepare, Patch: []byte{}}
 
+	// try to go through this competing push, only try once
+	succeed, bitMap = self.sendPrepare(&prepare)
+	if !succeed {
+		self.sendPush(&pushes, bitMap)
+		return false
+	}
+
+	// here we read missing data from some node
+	for key, ip := range ipList {
+		if bitMap[key] {
+			e := ReadMissingData(ip)
+			if e == nil {
+				break
+			}
+		}
+	}
+
+	self.id = len(ipList)		// the last one
+	self.addressList = append(ipList, self.server)
+
+	succ := false
+	SetReady(self.server, self.server, &succ)
+	self.sendPush(&pushes, bitMap)
+	return true
+}

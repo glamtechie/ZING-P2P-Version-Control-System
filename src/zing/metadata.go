@@ -1,23 +1,24 @@
 package zing
 
 import (
-	"os"
-	"strconv"
-	"io/ioutil"
 	"bytes"
 	"encoding/gob"
-
+	"io/ioutil"
+	"os"
+	"strconv"
 )
 
 const (
-	file="data.txt"
+	METADATA_FILE = ".zing/metadata.txt"
 )
+
+
 func GetIPList(filename string) []string {
-	return []string{"137.110.90.199:27321", "137.110.90.91:27321" }
+	return []string{"137.110.90.199:27321", "137.110.92.254:27321"}
 }
 
 func GetIndexNumber(filename string) int {
-	return 2
+	return 0
 }
 
 func GetVersionNumber(filename string) int {
@@ -28,7 +29,7 @@ func GetVersionNumber(filename string) int {
 	data := make([]byte, 16)
 	file.Read(data)
 
-	tail 	  := bytes.Index(data, []byte{0})
+	tail := bytes.Index(data, []byte{0})
 	result, _ := strconv.Atoi(string(data[:tail]))
 	file.Close()
 	return result
@@ -45,7 +46,6 @@ func SetVersionNumber(filename string, version int) {
 
 	return
 }
-
 
 //file stuff
 
@@ -69,25 +69,25 @@ func getInterface(bts []byte, data interface{}) error {
 	return nil
 }
 
-func writeFile(data interface{}, filename string)error{
-	bts,e:=getBytes(data)
-	if e!=nil{
+func writeFile(data interface{}, filename string) error {
+	bts, e := getBytes(data)
+	if e != nil {
 		return e
 	}
 	err := ioutil.WriteFile(filename, bts, 0644)
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func readFile(filename string, data interface{})(error){
+func readFile(filename string, data interface{}) error {
 	bts, err := ioutil.ReadFile(filename)
-    if err != nil {
-    	return err
-    }
-    err = getInterface(bts, &data)
+	if err != nil {
+		return err
+	}
+	err = getInterface(bts, &data)
 	if err != nil {
 		return err
 	}
@@ -96,73 +96,72 @@ func readFile(filename string, data interface{})(error){
 
 type Data struct {
 	Myown Version
-	All []string
+	All   []string
 }
 
-func getIPs()([]string) {
+func getAddressList() []string {
 	var data Data
-	e:=readFile(file,&data)
-	if e!=nil{
+	e := readFile(METADATA_FILE, &data)
+	if e != nil {
 		panic(e)
 	}
 	return data.All
 }
 
-func getOwnIndex()(int){
+func getOwnIndex() int {
 	var data Data
-	e:=readFile(file,&data)
-	if e!=nil{
+	e := readFile(METADATA_FILE, &data)
+	if e != nil {
 		panic(e)
 	}
 	return data.Myown.NodeIndex
 
 }
 
-func getVersion()(int){
+func getVersion() int {
 	var data Data
-	e:=readFile(file,&data)
-	if e!=nil{
+	e := readFile(METADATA_FILE, &data)
+	if e != nil {
 		panic(e)
 	}
 	return data.Myown.VersionIndex
 }
 
-func setIPs(iplist []string){
+func setAddressList(iplist []string) {
 	var data Data
-	e:=readFile(file,&data)
-	if e!=nil{
+	e := readFile(METADATA_FILE, &data)
+	if e != nil {
 		panic(e)
 	}
-	data.All=iplist
-	e=writeFile(&data,file)
-	if e!=nil{
+	data.All = iplist
+	e = writeFile(&data, METADATA_FILE)
+	if e != nil {
 		panic(e)
 	}
 }
 
-func setVersion(ver int){
+func setVersion(ver int) {
 	var data Data
-	e:=readFile(file,&data)
-	if e!=nil{
+	e := readFile(METADATA_FILE, &data)
+	if e != nil {
 		panic(e)
 	}
-	data.Myown.VersionIndex=ver
-	e=writeFile(&data,file)
-	if e!=nil{
+	data.Myown.VersionIndex = ver
+	e = writeFile(&data, METADATA_FILE)
+	if e != nil {
 		panic(e)
 	}
 }
 
-func setOwnIndex(me int){
+func setOwnIndex(me int) {
 	var data Data
-	e:=readFile(file,&data)
-	if e!=nil{
+	e := readFile(METADATA_FILE, &data)
+	if e != nil {
 		panic(e)
 	}
-	data.Myown.NodeIndex=me
-	e=writeFile(&data,file)
-	if e!=nil{
+	data.Myown.NodeIndex = me
+	e = writeFile(&data, METADATA_FILE)
+	if e != nil {
 		panic(e)
 	}
 }
-

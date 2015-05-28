@@ -70,8 +70,8 @@ func (self *Server) ReceivePrepare(prepare *Version, succ *bool) error {
 	if !self.ready {
 		return fmt.Errorf("Server not ready")
 	}
-	// it is a dummy version
-	if prepare.NodeIndex == -1 && prepare.VersionIndex == -1 {
+	// it is a dummy prepare message
+	if prepare.NodeAddress == INVALIDIP {
 		return nil
 	}
 
@@ -118,7 +118,7 @@ func processChanges(push *Push, index int) []*Push {
 }
 
 
-func (self *Server) commitChanges(pushes []*Push) error {
+func commitChanges(pushes []*Push, id int) error {
 	// commit the pushes to the file system
 	for _, push := range pushes {
 		if len(push.Patch) == 0 {
@@ -126,7 +126,7 @@ func (self *Server) commitChanges(pushes []*Push) error {
 		}
 
 		var err error
-		if push.Change.NodeIndex == self.id {
+		if push.Change.NodeIndex == id {
 			err = zing_process_push_at_src("patch", push.Patch)	
 		} else {
 			err = zing_process_push("patch", push.Patch)	
@@ -165,7 +165,7 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	}
 	
 	// commit the changes
-	self.commitChanges(pushes)
+	commitChanges(pushes, self.id)
 	if len(pushes) > 0 {
 		self.preQueue = self.preQueue[len(pushes):]
 	}
@@ -179,7 +179,7 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 func (self *Server) ReceiveReady(address string, succ *bool) error {
 	// this function should only called by its own client
 	if address != self.address {
-		panic("Not come from my self")
+		panic("In receive ready: Not come from my self")
 	}
 
 	self.lock.Lock()
@@ -190,25 +190,14 @@ func (self *Server) ReceiveReady(address string, succ *bool) error {
 	return nil
 }
 
-
-/*
- RPC function: RecevieIP
-*/
- /*
-func (self *Server) ReceiveIPChange(ipchange *IPChange, ipList *[]string) error {
-	// TODO: write the ip changes to the metadata file
+func (self *Server) ReturnAddressList(address string, ipList *[]string) error {
+	*ipList = GetIPList("info.txt") // this name need change
 	return nil
 }
 
-func (self *Server) ReceiveIPListRequest(address string, ipList *[]string) error {
-	list := GetIPList("info.txt")
-	*ipList = list
-	return nil
-}*/
-
 func (self *Server) PrepareQueueCheck(address string, result *bool) error {
 	if address != self.address {
-		panic("Not come from my self")
+		panic("In check preQueue: Not come from my self")
 	}
 
 	self.lock.Lock()
