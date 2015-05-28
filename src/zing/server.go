@@ -123,10 +123,16 @@ func (self *Server) commitChanges(pushes []*Push) error {
 	for _, push := range pushes {
 		if len(push.Patch) == 0 {
 			continue
-		} 
+		}
 
-		e := zing_process_push("patch", push.Patch)
-		if e != nil {
+		var err error
+		if push.Change.NodeIndex == self.id {
+			err = zing_process_push_at_src("patch", push.Patch)	
+		} else {
+			err = zing_process_push("patch", push.Patch)	
+		}
+
+		if err != nil {
 			panic("commit change error")
 		}
 	}
@@ -188,6 +194,7 @@ func (self *Server) ReceiveReady(address string, succ *bool) error {
 /*
  RPC function: RecevieIP
 */
+ /*
 func (self *Server) ReceiveIPChange(ipchange *IPChange, ipList *[]string) error {
 	// TODO: write the ip changes to the metadata file
 	return nil
@@ -197,8 +204,7 @@ func (self *Server) ReceiveIPListRequest(address string, ipList *[]string) error
 	list := GetIPList("info.txt")
 	*ipList = list
 	return nil
-}
-
+}*/
 
 func (self *Server) PrepareQueueCheck(address string, result *bool) error {
 	if address != self.address {

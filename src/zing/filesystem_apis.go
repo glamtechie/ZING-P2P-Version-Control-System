@@ -83,8 +83,22 @@ func zing_patch_path(patchname string) string {
 	return ".zing/global/" + patchname
 }
 
-func zing_abort_push() {
-	//TODO: ?
+func zing_process_push_at_src(patchname string, filecontent []byte) error {
+	zing_write_patch(patchname, filecontent)
+
+	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_process_push_at_src.sh", patchname).Output()
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	fmt.Printf("%s\n", out)
+	filepath := zing_patch_path(patchname)
+	out, err = exec.Command("rm", filepath).Output()
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return nil
 }
 
 func zing_process_push(patchname string, filecontent []byte) error {
