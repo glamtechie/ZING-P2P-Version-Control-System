@@ -121,6 +121,10 @@ func processChanges(push *Push, index int) []*Push {
 func (self *Server) commitChanges(pushes []*Push) error {
 	// commit the pushes to the file system
 	for _, push := range pushes {
+		if len(push.Patch) == 0 {
+			continue
+		} 
+
 		e := zing_process_push("patch", push.Patch)
 		if e != nil {
 			panic("commit change error")
@@ -132,7 +136,7 @@ func (self *Server) commitChanges(pushes []*Push) error {
 /*
  RPC function: ReceivePush
 */
-func (self *Server) ReceivePush(push *Push, succ *bool) error {	
+func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	var index int = -1
 	var pushes []*Push 
 
@@ -184,9 +188,14 @@ func (self *Server) ReceiveReady(address string, succ *bool) error {
 /*
  RPC function: RecevieIP
 */
-func (self *Server) ReceiveIPChange(ipchange *IPChange, succ *bool) error {
+func (self *Server) ReceiveIPChange(ipchange *IPChange, ipList *[]string) error {
 	// TODO: write the ip changes to the metadata file
-	*succ = true
+	return nil
+}
+
+func (self *Server) ReceiveIPListRequest(address string, ipList *[]string) error {
+	list := GetIPList("info.txt")
+	*ipList = list
 	return nil
 }
 

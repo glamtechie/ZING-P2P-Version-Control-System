@@ -67,18 +67,18 @@ type IPChange struct {
 	// the index of the machine
 	Index	int
 
-	// the ip address of this machine
+	// the ip address of this machine 
 	IP	string
 }
 
 
-func SendIPChange(address string, ipchange *IPChange, succ *bool) error {
+func SendIPChange(address string, ipchange *IPChange, iplist *[]string) error {
 	conn, e := rpc.DialHTTP("tcp", address)
 	if e != nil {
 		return e
 	}
 
-	e = conn.Call("Server.ReceiveIPChange", ipchange, succ)
+	e = conn.Call("Server.ReceiveIPChange", ipchange, iplist)
 	if e != nil {
 		conn.Close()
 		return e
@@ -99,6 +99,22 @@ func SetReady(address, ip string, succ *bool) error {
 	}
 	return conn.Close()
 }
+
+
+func RequestIPList(address, ip string, iplist *[]string) error {
+	conn, e := rpc.DialHTTP("tcp", address)
+	if e != nil {
+		return e
+	}
+
+	e = conn.Call("Server.ReceiveIPListRequest", ip, iplist)
+	if e != nil {
+		conn.Close()
+		return e
+	}
+	return conn.Close()
+}
+
 
 func CheckPrepareQueue(address, ip string, result *bool) error {
 	conn, e := rpc.DialHTTP("tcp", address)

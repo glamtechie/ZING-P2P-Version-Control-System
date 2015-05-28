@@ -127,16 +127,21 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 	}
 }
 
-func (self *Client) sendAbort(liveBitMap []bool, cversion int){
+func (self *Client) sendAbort(liveBitMap []bool, cversion int) {
 	ar := make([]byte, 0)
 	self.sendPush(&Push{Version{self.id, cversion}, ar}, liveBitMap)
 }
 
-/*
-func (self *Client) comeAlive() {
-	ipchange := IPChange{Index: self.id, IP: self.server}
 
-	// tell everybody I am alive
+/*
+func (self *Client) comeAlive(ip string) bool {
+	ipchange := IPChange{Index: self.id, IP: self.server}
+	iplist   := make([]string, 0)
+	e := SendIPChange(ip, ipchange, &iplist)
+	if e != nil {
+		return false
+	}
+
 	for i := 0; i < len(self.addressList); i++ {
 		address := self.addressList[i]
 		succ    := false
@@ -161,4 +166,5 @@ func (self *Client) comeAlive() {
 	self.sendPush(&pushes, bitMap)
 }
 */
+
 
