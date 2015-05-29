@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io/ioutil"
 	"io"
 	"os/exec"
 	"strconv"
@@ -65,7 +66,13 @@ func zing_make_patch_for_push(branch string, patchname string) (error, []byte) {
 		return err, b_array
 	}
 	fmt.Printf("%s\n", out)
-	b_array = zing_read_patch(patchname)
+	b_array   = zing_read_patch(patchname)
+	filepath := zing_patch_path(patchname)
+	out, err = exec.Command("rm", filepath).Output()
+	if err != nil {
+		log.Fatal(err)
+		return err, nil
+	}
 	return nil, b_array
 }
 
@@ -86,7 +93,7 @@ func zing_patch_path(patchname string) string {
 func zing_process_push_at_src(patchname string, filecontent []byte) error {
 	zing_write_patch(patchname, filecontent)
 
-	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_process_push_at_src.sh", patchname).Output()
+	out, err := exec.Command("/bin/sh", absPath + "filesystem_scripts/zing_process_push_at_src.sh", "master").Output()
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -116,7 +123,6 @@ func zing_process_push(patchname string, filecontent []byte) error {
 		log.Fatal(err)
 		return err
 	}
-
 	return nil
 }
 
@@ -127,25 +133,10 @@ func zing_read_patch(patchname string) []byte {
 		panic("Can't open the patch file")
 	}
 
-	result := make([]byte, 0)
-	data   := make([]byte, 100)
-	count  := 100
-	var offset int64 = 0
-	for {
-		count, err = file.ReadAt(data, offset)
-		if err != nil {
-			if err == io.EOF {
-				result = append(result, data...)
-				break
-			} else {
-				panic("Read file error")
-			} 
-		} else {
-			result = append(result, data...)
-			offset += int64(count)	
-		}
+	result, e := ioutil.ReadFile(filepath)
+	if e != nil {
+		panic("Read file content failed")
 	}
-
 	file.Close()
 	return result
 }
