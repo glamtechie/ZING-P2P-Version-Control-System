@@ -1,7 +1,7 @@
 package zing
 
 import (
-	"errors"
+	"fmt"
 )
 
 type Client struct {
@@ -46,7 +46,7 @@ func (self *Client) Push() error {
 	status := false
 	CheckPrepareQueue(self.server, self.server, &status)
 	if status == false {
-		return errors.New("Another push in progress, please pull and try again!")
+		return fmt.Errorf("Another push in progress, please pull and try again!")
 	}
 	
 	cversion     := GetVersionNumber(".zing/VersionNumber");
@@ -59,8 +59,9 @@ func (self *Client) Push() error {
 		}
 	}
 	if (succ == false) || (count <= len(bitMap) / 2) {
-		 self.sendAbort(bitMap, cversion)
-		 return nil
+		fmt.Println("Push failed, abort")
+		self.sendAbort(bitMap, cversion)
+		return nil
 	}
 
 	e, data := zing_make_patch_for_push("master", "patch")
