@@ -43,12 +43,16 @@ func (self *Client) Add(filename string) error {
 
 
 func (self *Client) Push() error {
+	er:=self.Pull()
+	if er!=nil{
+		return er
+	}
 	status := false
 	CheckPrepareQueue(self.server, self.server, &status)
 	if status == false {
 		return fmt.Errorf("Another push in progress, please pull and try again!")
 	}
-	
+
 	cversion     := GetVersionNumber(".zing/VersionNumber");
 	prepare      := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
 	succ, bitMap := self.sendPrepare(&prepare)
@@ -141,7 +145,7 @@ func (self *Client) comeAlive() {
 	bitMap  := make([]bool, 0)
 	prepare := Version{NodeIndex: self.id, VersionIndex: -1, NodeAddress: self.server}
 	pushes  := Push{Change: prepare, Patch: []byte{}}
-	
+
 	for {		// try to go through this competing push
 		succeed, bitMap = self.sendPrepare(&prepare)
 		if succeed {
@@ -168,13 +172,13 @@ func (self *Client) comeAlive() {
 
 // new node join the group
 // don't use this function yet
-func (self *Client) joinGroup(address string) bool {	
+func (self *Client) joinGroup(address string) bool {
 	ipList := make([]string, 0)
 	err    := RequestAddressList(address, self.server, &ipList)
 	if err != nil {
 		return false
 	}
- 
+
  	succeed := false
 	bitMap  := make([]bool, 0)
 	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
