@@ -164,3 +164,23 @@ func zing_revert(commit_id string) error {
 	fmt.Printf("%s\n", out)
 	return nil
 }
+
+func zing_log() error {
+	out, err := exec.Command("/bin/sh", absPath+"filesystem_scripts/zing_log.sh").Output()
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	fmt.Printf("%s\n", out)
+	return nil
+}
+
+func zing_status() error {
+	out, err := exec.Command("/bin/sh", absPath+"filesystem_scripts/zing_status.sh").Output()
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	fmt.Printf("%s\n", out)
+	return nil
+}
