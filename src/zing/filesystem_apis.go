@@ -46,8 +46,8 @@ func zing_add(filename string) error {
 	return nil
 }
 
-func zing_commit() error {
-	out, err := exec.Command("/bin/sh", absPath+"filesystem_scripts/zing_commit.sh").Output()
+func zing_commit(commit_msg string) error {
+	out, err := exec.Command("/bin/sh", absPath+"filesystem_scripts/zing_commit.sh", commit_msg).Output()
 	if err != nil {
 		log.Fatal(err)
 		return err

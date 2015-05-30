@@ -2,5 +2,6 @@
 
 git branch;
 
+exit $?
 
 

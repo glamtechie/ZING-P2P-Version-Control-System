@@ -2,5 +2,6 @@
 
 git log | sed "s/git/zing/g";
 
+exit $?
 
 
