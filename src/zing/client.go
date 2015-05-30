@@ -135,14 +135,13 @@ func (self *Client) sendAbort(liveBitMap []bool, cversion int) {
 	self.sendPush(&Push{Change: vr, Patch: ar}, liveBitMap)
 }
 
-
 func (self *Client) comeAlive() {
-	succeed := false
-	bitMap  := make([]bool, 0)
-	prepare := Version{NodeIndex: self.id, VersionIndex: -1, NodeAddress: self.server}
+ 	succeed := false
+	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
 	pushes  := Push{Change: prepare, Patch: []byte{}}
-	
-	for {		// try to go through this competing push
+	bitMap  := make([]bool, 0)
+
+	for {
 		succeed, bitMap = self.sendPrepare(&prepare)
 		if succeed {
 			break
@@ -151,45 +150,47 @@ func (self *Client) comeAlive() {
 		}
 	}
 
-	// here we read missing data from some node
-	for key, address := range self.addressList {
+	ipList  := getAddressList()
+	resList := make([]string, 0)
+	for key, ip := range ipList {
 		if bitMap[key] {
-			e := ReadMissingData(address)
-			if e == nil {
-				break
-			}
+			resList = make([]string, 0)
+			RequestAddressList(ip, ipList, &resList)
+
+			ReadMissingData(ip)
 		}
 	}
 
-	succ := false
-	SetReady(self.server, self.server, &succ)
-	self.sendPush(&pushes, bitMap)
+	if len(resList) > len(ipList) {
+		setAddressList(resList)
+	}
+	return
 }
 
-// new node join the group
-// don't use this function yet
-func (self *Client) joinGroup(address string) bool {	
-	ipList := make([]string, 0)
-	err    := RequestAddressList(address, self.server, &ipList)
-	if err != nil {
-		return false
-	}
- 
+
+
+func (self *Client) joinGroup(address string) bool {
  	succeed := false
-	bitMap  := make([]bool, 0)
 	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
 	pushes  := Push{Change: prepare, Patch: []byte{}}
+	ipList  := make([]string, 0)
+	bitMap  := make([]bool, 0)
 
-	// try to go through this competing push, only try once
-	succeed, bitMap = self.sendPrepare(&prepare)
-	if !succeed {
-		self.sendPush(&pushes, bitMap)
-		return false
+	for {
+		ipList  = make([]string, 0)
+		err    := RequestAddressList(make([]string, 0), self.server, &ipList)
+		if err != nil {
+			return false
+		}
+		succeed, bitMap = self.sendPrepare(&prepare)
+		if succeed {
+			break
+		} else {
+			self.sendPush(&pushes, bitMap)
+		}
 	}
-
-	// here we read missing data from some node
 	for key, ip := range ipList {
-		if bitMap[key] {
+		if bitMap[key] {			// read from any of the node
 			e := ReadMissingData(ip)
 			if e == nil {
 				break
@@ -197,8 +198,10 @@ func (self *Client) joinGroup(address string) bool {
 		}
 	}
 
-	self.id = len(ipList)		// the last one
-	self.addressList = append(ipList, self.server)
+	iplist = append(iplist, self.server)
+	setAddressList(iplist)
+	setVersion(0)
+	setOwnIndex(len(iplist) - 1)
 
 	succ := false
 	SetReady(self.server, self.server, &succ)

@@ -190,8 +190,15 @@ func (self *Server) ReceiveReady(address string, succ *bool) error {
 	return nil
 }
 
-func (self *Server) ReturnAddressList(address string, ipList *[]string) error {
-	*ipList = GetIPList("info.txt") // this name need change
+func (self *Server) ReturnAddressList(argList []string, resList *[]string) error {
+	list := getAddressList()
+	if len(list) < len(argList) {
+		setAddressList(argList)
+		*resList = argList
+	} else {
+		*resList = list
+	}
+	
 	return nil
 }
 

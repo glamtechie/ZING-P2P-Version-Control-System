@@ -83,13 +83,13 @@ func SetReady(address, ip string, succ *bool) error {
 	return conn.Close()
 }
 
-func RequestAddressList(address, ip string, ipList *[]string) error {
+func RequestAddressList(address string, argList []string, ipList *[]string) error {
 	conn, e := rpc.DialHTTP("tcp", address)
 	if e != nil {
 		return e
 	}
 
-	e = conn.Call("Server.ReturnAddressList", ip, ipList)
+	e = conn.Call("Server.ReturnAddressList", argList, ipList)
 	if e != nil {
 		conn.Close()
 		return e
