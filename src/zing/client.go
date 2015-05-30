@@ -31,8 +31,8 @@ func (self *Client) Pull() error {
 	return e
 }
 
-func (self *Client) Commit() error {
-	e := zing_commit()
+func (self *Client) Commit(message string) error {
+	e := zing_commit(message)
 	return e
 }
 
@@ -43,12 +43,16 @@ func (self *Client) Add(filename string) error {
 
 
 func (self *Client) Push() error {
+	er:=self.Pull()
+	if er!=nil{
+		return er
+	}
 	status := false
 	CheckPrepareQueue(self.server, self.server, &status)
 	if status == false {
 		return fmt.Errorf("Another push in progress, please pull and try again!")
 	}
-	
+
 	cversion     := GetVersionNumber(".zing/VersionNumber");
 	prepare      := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
 	succ, bitMap := self.sendPrepare(&prepare)
@@ -167,8 +171,6 @@ func (self *Client) comeAlive() {
 	return
 }
 
-
-
 func (self *Client) joinGroup(address string) bool {
  	succeed := false
 	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
@@ -207,4 +209,19 @@ func (self *Client) joinGroup(address string) bool {
 	SetReady(self.server, self.server, &succ)
 	self.sendPush(&pushes, bitMap)
 	return true
+}
+
+func (self *Client) Revert(commit_id string)(error){
+	e:=zing_revert(commit_id)
+	return e
+}
+
+func (self *Client) Log()(error){
+	e:=zing_log()
+	return e
+}
+
+func (self *Client) Status()(error){
+	e:=zing_status()
+	return e
 }

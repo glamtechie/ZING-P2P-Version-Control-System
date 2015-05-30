@@ -10,15 +10,16 @@ import (
 
 const (
 	METADATA_FILE = ".zing/metadata.txt"
+	LOG_FILE=".zing/log.txt"
 )
 
 
 func GetIPList(filename string) []string {
-	return []string{"137.110.90.199:27321", "137.110.92.254:27321"}
+	return []string{"192.168.1.123:27321", "192.168.1.135:27321", "192.168.1.134:27321"}
 }
 
 func GetIndexNumber(filename string) int {
-	return 0
+	return 2
 }
 
 func GetVersionNumber(filename string) int {
@@ -48,6 +49,47 @@ func SetVersionNumber(filename string, version int) {
 }
 
 //file stuff
+func writeLog(push Push){
+	var data []Push
+	e := readFile(LOG_FILE, &data)
+	if e != nil {
+		panic(e)
+	}
+
+	data=append(data,push)
+
+	e = writeFile(&data, LOG_FILE)
+	if e != nil {
+		panic(e)
+	}
+}
+
+func getPushDiff(ver Version)([]Push){
+	var data []Push
+	e := readFile(LOG_FILE, &data)
+	if e != nil {
+		panic(e)
+	}
+
+	var i int
+	for i=0;i<len(data)-1;i++{
+		if data[i].Change.NodeIndex==ver.NodeIndex && data[i].Change.VersionIndex==ver.VersionIndex{
+			return data[i+1:]
+		}
+	}
+
+	return make([]Push,0)
+}
+
+func getLastVer()(Version){
+	var data []Push
+	e := readFile(LOG_FILE, &data)
+	if e != nil {
+		panic(e)
+	}
+
+	return data[len(data)-1].Change
+}
 
 func getBytes(data interface{}) ([]byte, error) {
 	var buf bytes.Buffer
