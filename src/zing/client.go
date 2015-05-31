@@ -2,6 +2,7 @@ package zing
 
 import (
 	"fmt"
+	"net"
 )
 
 type Client struct {
@@ -16,27 +17,46 @@ type Client struct {
 }
 
 
-func InitializeClient(fileName string) *Client {
+func InitializeClient() *Client {
 	client := Client{}
-	client.id = GetIndexNumber(fileName)
-	client.addressList = GetIPList(fileName)
+	client.id = getOwnIndex()
+	client.addressList = getAddressList()
 
-	client.server = client.addressList[client.id]
-	//SetVersionNumber("VersionNumber", 0)
+	addrs, _ := net.InterfaceAddrs()
+    for _, address := range addrs {
+        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+            if ipnet.IP.To4() != nil {
+            	client.server = ipnet.IP.String() + ":27321"
+            	break
+            }
+        }
+    }
 	return &client
 }
 
 func (self *Client) Pull() error {
+	if self.id == -1 {
+		return fmt.Errorf("Not Initialized")
+	}
+
 	e := zing_pull("master")
 	return e
 }
 
 func (self *Client) Commit(message string) error {
+	if self.id == -1 {
+		return fmt.Errorf("Not Initialized")
+	}
+
 	e := zing_commit(message)
 	return e
 }
 
 func (self *Client) Add(filename string) error {
+	if self.id == -1 {
+		return fmt.Errorf("Not Initialized")
+	}
+
 	e := zing_add(filename)
 	return e
 }
@@ -53,7 +73,7 @@ func (self *Client) Push() error {
 		return fmt.Errorf("Another push in progress, please pull and try again!")
 	}
 
-	cversion     := GetVersionNumber(".zing/VersionNumber");
+	cversion     := getVersion()
 	prepare      := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
 	succ, bitMap := self.sendPrepare(&prepare)
 	count := 0
@@ -67,13 +87,12 @@ func (self *Client) Push() error {
 		self.sendAbort(bitMap, cversion)
 		return nil
 	}
-
 	e, data := zing_make_patch_for_push("master", "patch")
 	if e != nil{
 		return e
 	}
 
-	SetVersionNumber(".zing/VersionNumber", cversion + 1)
+	setVersion(cversion + 1)
 	self.sendPush(&Push{Change: prepare, Patch: data}, bitMap)
 	return nil
 }
@@ -141,7 +160,7 @@ func (self *Client) sendAbort(liveBitMap []bool, cversion int) {
 
 func (self *Client) comeAlive() {
  	succeed := false
-	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
+	prepare := Version{NodeIndex: self.id, VersionIndex: -1, NodeAddress: self.server}
 	pushes  := Push{Change: prepare, Patch: []byte{}}
 	bitMap  := make([]bool, 0)
 
@@ -161,15 +180,28 @@ func (self *Client) comeAlive() {
 			resList = make([]string, 0)
 			RequestAddressList(ip, ipList, &resList)
 
-			ReadMissingData(ip)
+			localVer := getLastVer()
+			pushList := make([]Push, 0)
+			ReadMissingData(ip, localVer, &pushList)
+			if len(pushList) == 1 && len(pushList[0].Patch) == 0 {
+				pushList = getPushDiff(pushList[0].Change)
+				ReadMissingData(ip, localVer, &pushList)
+			} else {
+				commitChanges(pushList, self.id)
+			}
 		}
 	}
 
 	if len(resList) > len(ipList) {
 		setAddressList(resList)
 	}
+
+	succ := false
+	SetReady(self.server, self.server, &succ)
+	self.sendPush(&pushes, bitMap)
 	return
 }
+
 
 func (self *Client) joinGroup(address string) bool {
  	succeed := false
@@ -180,7 +212,7 @@ func (self *Client) joinGroup(address string) bool {
 
 	for {
 		ipList  = make([]string, 0)
-		err    := RequestAddressList(make([]string, 0), self.server, &ipList)
+		err    := RequestAddressList(self.server, make([]string, 0), &ipList)
 		if err != nil {
 			return false
 		}
@@ -192,18 +224,20 @@ func (self *Client) joinGroup(address string) bool {
 		}
 	}
 	for key, ip := range ipList {
-		if bitMap[key] {			// read from any of the node
-			e := ReadMissingData(ip)
+		if bitMap[key] {
+			localVer := getLastVer()
+			pushList := make([]Push, 0)
+			e := ReadMissingData(ip, localVer, &pushList) // read from any of the node
 			if e == nil {
 				break
 			}
 		}
 	}
 
-	iplist = append(iplist, self.server)
-	setAddressList(iplist)
+	ipList = append(ipList, self.server)
+	setAddressList(ipList)
 	setVersion(0)
-	setOwnIndex(len(iplist) - 1)
+	setOwnIndex(len(ipList) - 1)
 
 	succ := false
 	SetReady(self.server, self.server, &succ)
@@ -212,16 +246,28 @@ func (self *Client) joinGroup(address string) bool {
 }
 
 func (self *Client) Revert(commit_id string)(error){
+	if self.id == -1 {
+		return fmt.Errorf("Not Initialized")
+	}
+
 	e:=zing_revert(commit_id)
 	return e
 }
 
 func (self *Client) Log()(error){
+	if self.id == -1 {
+		return fmt.Errorf("Not Initialized")
+	}
 	e:=zing_log()
 	return e
 }
 
 func (self *Client) Status()(error){
+	if self.id == -1 {
+		return fmt.Errorf("Not Initialized")
+	}
 	e:=zing_status()
 	return e
 }
+
+

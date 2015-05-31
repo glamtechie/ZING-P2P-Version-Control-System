@@ -28,19 +28,27 @@ type Server struct {
 
 // global variable
 var (
-	GlobalBuffer []*Push
+	GlobalBuffer []Push
 	IndexList    []int
 )
 
 
-func InitializeServer(fileName string) *Server {
+func InitializeServer() *Server {
 	server := Server{}
-	server.id = GetIndexNumber(fileName)
-	
-	addressList := GetIPList(fileName)
-	server.address  = addressList[server.id]
+	server.id = getOwnIndex()
+	addrs, _ := net.InterfaceAddrs()
+    for _, address := range addrs {
+        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+            if ipnet.IP.To4() != nil {
+            	server.address = ipnet.IP.String() + ":27321"
+            	break
+            }
+        }
+    }
+
 	server.preQueue = make([]Version, 0)
 	server.lock     = &sync.Mutex{}
+	// need to be changed
 	server.ready    = true
 	return &server
 }
@@ -84,7 +92,7 @@ func (self *Server) ReceivePrepare(prepare *Version, succ *bool) error {
 	return nil
 }
 
-func processChanges(push *Push, index int) []*Push {
+func processChanges(push Push, index int) []Push {
 	insertPoint := -1
 	for key, value := range IndexList {
 		if index < value {
@@ -97,7 +105,7 @@ func processChanges(push *Push, index int) []*Push {
 		insertPoint = len(IndexList)
 	}
 	IndexList    = append(IndexList[:insertPoint],    append([]int{index}, IndexList[insertPoint:]...)...)
-	GlobalBuffer = append(GlobalBuffer[:insertPoint], append([]*Push{push}, GlobalBuffer[insertPoint:]...)...)
+	GlobalBuffer = append(GlobalBuffer[:insertPoint], append([]Push{push}, GlobalBuffer[insertPoint:]...)...)
 
 	if IndexList[0] == 0 {
 		cutPoint := 1
@@ -113,15 +121,23 @@ func processChanges(push *Push, index int) []*Push {
 		GlobalBuffer = GlobalBuffer[cutPoint:]
 		return results
 	} else {
-		return make([]*Push, 0)
+		return make([]Push, 0)
 	}
 }
 
 
-func commitChanges(pushes []*Push, id int) error {
+func commitChanges(pushes []Push, id int) error {
 	// commit the pushes to the file system
 	for _, push := range pushes {
+		if push.Change.NodeIndex == -1 && push.Change.VersionIndex == -1 {
+			// this is a new node join.
+			ipList := getAddressList()
+			ipList = append(ipList, push.Change.NodeAddress)
+			setAddressList(ipList)
+			continue
+		}
 		if len(push.Patch) == 0 {
+			// this is an abort message or an come alive message.
 			continue
 		}
 
@@ -135,6 +151,9 @@ func commitChanges(pushes []*Push, id int) error {
 		if err != nil {
 			panic("commit change error")
 		}
+
+		// write the push to the log
+		writeLog(push)
 	}
 	return nil
 }
@@ -144,7 +163,7 @@ func commitChanges(pushes []*Push, id int) error {
 */
 func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	var index int = -1
-	var pushes []*Push 
+	var pushes []Push 
 
 	fmt.Printf("Receive the Push from Node: %d, Version: %d\n", push.Change.NodeIndex, push.Change.VersionIndex)
 	fmt.Printf("Patch length: %d\n", len(push.Patch))
@@ -161,7 +180,7 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	if index == -1 {
 		panic("No match prepare message")
 	} else {
-		pushes = processChanges(push, index)
+		pushes = processChanges(*push, index)
 	}
 	
 	// commit the changes
@@ -217,3 +236,26 @@ func (self *Server) PrepareQueueCheck(address string, result *bool) error {
 	}
 	return nil
 }
+
+func (self *Server) ReturnMissingData(ver Version, pushes *[]Push) error {
+	if len(*pushes) > 0 {
+		commitChanges(*pushes, self.id)
+		return nil
+	}
+
+	tmpList := getPushDiff(ver)
+	if len(tmpList) == 0 {
+		localVer := getLastVer()
+
+		tmpList = make([]Push, 1)
+		tmpList[0].Change = localVer
+		tmpList[0].Patch  = make([]byte, 0) 
+		*pushes = tmpList
+	} else {
+		*pushes = tmpList
+	}
+	return nil
+}
+
+
+

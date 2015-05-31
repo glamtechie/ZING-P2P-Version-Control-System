@@ -112,8 +112,18 @@ func CheckPrepareQueue(address, ip string, result *bool) error {
 }
 
 // New node read missing data from another node.
-func ReadMissingData(address string) error {
-	return nil
+func ReadMissingData(address string, ver Version, pushes *[]Push) error {
+	conn, e := rpc.DialHTTP("tcp", address)
+	if e != nil {
+		return e
+	}
+
+	e = conn.Call("Server.ReturnMissingData", ver, pushes)
+	if e != nil {
+		conn.Close()
+		return e
+	}
+	return conn.Close()
 }
 
 
