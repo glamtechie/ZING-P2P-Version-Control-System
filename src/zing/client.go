@@ -19,6 +19,13 @@ type Client struct {
 
 func InitializeClient() *Client {
 	client := Client{}
+	if _, err := os.Stat(METADATA_FILE); os.IsNotExist(err) {
+    	data:=Data{Version{-1,-1,""},make([]string,0)}
+    	e = writeFile(&data, METADATA_FILE)
+    	if e!=nil{
+    		panic(e)
+    	}
+	}
 	client.id = getOwnIndex()
 	client.addressList = getAddressList()
 
@@ -32,6 +39,33 @@ func InitializeClient() *Client {
         }
     }
 	return &client
+}
+
+func (self *Client) Init() error{
+	e:=zing_init(0)
+	if e!=nil{
+		return e
+	}
+
+	setOwnIndex(0)
+	writeLog(Version{-1,-1,getAddressList()[0]},make([]byte,0))
+	setVersion(0)
+	return nil
+}
+
+func (self *Client) Clone(ip string) error{
+	e:=zing_init(0)
+	if e!=nil{
+		return e
+	}
+	writeLog(Version{-1,-1,getAddressList()[0]},make([]byte,0))
+	setVersion(0)
+	status:=self.joinGroup(ip)
+	if status==false{
+		return fmt.Errorf("Cannot clone")
+	}
+	return nil
+
 }
 
 func (self *Client) Pull() error {
