@@ -264,7 +264,7 @@ func (self *Client) joinGroup(address string) bool {
 
 	for {
 		ipList  = make([]string, 0)
-		err    := RequestAddressList(self.server, make([]string, 0), &ipList)
+		err    := RequestAddressList(address, make([]string, 0), &ipList)
 		if err != nil {
 			return false
 		}
