@@ -245,6 +245,8 @@ func (self *Server) ReturnMissingData(ver Version, pushes *[]Push) error {
 
 	tmpList  := getPushDiff(ver)
 	localVer := getLastVer()
+	fmt.Println("Missing data request: local version", localVer, "remote version", ver)
+
 	if len(tmpList) == 0 && !VersionEquality(ver, localVer) {
 		// I surpass the sender.
 		tmpList = make([]Push, 1)
