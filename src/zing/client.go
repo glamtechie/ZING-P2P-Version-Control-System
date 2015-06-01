@@ -235,6 +235,18 @@ func (self *Client) comeAlive() {
 		} else {
 			self.sendPush(&pushes, bitMap)
 		}
+
+		live := false
+		for _, value := range bitMap {
+			if value {
+				live = true
+			}
+		}
+		if !live {
+			succ := false
+			SetReady(self.server, self.server, &succ)
+			return
+		}
 	}
 
 	ipList  := getAddressList()
