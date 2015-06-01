@@ -243,10 +243,10 @@ func (self *Server) ReturnMissingData(ver Version, pushes *[]Push) error {
 		return nil
 	}
 
-	tmpList := getPushDiff(ver)
-	if len(tmpList) == 0 {
-		localVer := getLastVer()
-
+	tmpList  := getPushDiff(ver)
+	localVer := getLastVer()
+	if len(tmpList) == 0 && !VersionEquality(ver, localVer) {
+		// I surpass the sender.
 		tmpList = make([]Push, 1)
 		tmpList[0].Change = localVer
 		tmpList[0].Patch  = make([]byte, 0) 

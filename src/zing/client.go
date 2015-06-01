@@ -49,11 +49,10 @@ func (self *Client) Init() error{
     if e != nil{
     	panic(e)
     }
-
     setAddressList([]string{self.server})
 
 	setOwnIndex(0)
-	log  := []Push{ Push{Version{-1,-1, self.server}, make([]byte,0)} }
+	log  := []Push{ Push{Version{-1,-1, ""}, make([]byte,0)} }
 	e     = writeFile(&log, LOG_FILE)
 	if e != nil {
 		panic(e)
@@ -72,7 +71,7 @@ func (self *Client) Clone(ip string) error{
     if e != nil {
     	panic(e)
     }
-	log  := []Push{ Push{Version{-1,-1, self.server}, make([]byte,0)} }
+	log  := []Push{ Push{Version{-1,-1, ""}, make([]byte,0)} }
 	e     = writeFile(&log, LOG_FILE)
 	if e != nil {
 		panic(e)
@@ -282,6 +281,7 @@ func (self *Client) joinGroup(address string) bool {
 			pushList := make([]Push, 0)
 			e := ReadMissingData(ip, localVer, &pushList) // read from any of the node
 			if e == nil {
+				commitChanges(pushList, self.id)
 				break
 			}
 		}
