@@ -72,7 +72,11 @@ func (self *Client) Clone(ip string) error{
     if e != nil {
     	panic(e)
     }
-	writeLog(Push{Version{-1,-1, self.server},make([]byte,0)})
+	log  := []Push{ Push{Version{-1,-1, self.server}, make([]byte,0)} }
+	e     = writeFile(&log, LOG_FILE)
+	if e != nil {
+		panic(e)
+	}
 	setVersion(0)
 	status:=self.joinGroup(ip)
 	if status==false{
