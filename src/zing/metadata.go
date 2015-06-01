@@ -129,7 +129,7 @@ func readFile(filename string, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = getInterface(bts, &data)
+	err = getInterface(bts, data)
 	if err != nil {
 		return err
 	}

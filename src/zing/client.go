@@ -44,15 +44,20 @@ func (self *Client) Init() error{
 	if e!=nil{
 		return e
 	}
-    data  := Data{Version{-1,-1,""},make([]string,0)}
-    e 	   = writeFile(&data, METADATA_FILE)
+    data := Data{Version{-1,-1,""},make([]string,0)}
+    e 	  = writeFile(&data, METADATA_FILE)
     if e != nil{
     	panic(e)
     }
+
     setAddressList([]string{self.server})
-    
+
 	setOwnIndex(0)
-	writeLog(Push{Version{-1,-1, self.server}, make([]byte,0)})
+	log  := []Push{ Push{Version{-1,-1, self.server}, make([]byte,0)} }
+	e     = writeFile(&log, LOG_FILE)
+	if e != nil {
+		panic(e)
+	}
 	setVersion(0)
 	return nil
 }
