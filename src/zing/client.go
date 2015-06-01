@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 )
 
 type Client struct {
@@ -86,6 +87,9 @@ func (self *Client) Clone(ip string) error{
 }
 
 func (self *Client) Pull() error {
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}
@@ -95,6 +99,9 @@ func (self *Client) Pull() error {
 }
 
 func (self *Client) Commit(message string) error {
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}
@@ -104,6 +111,9 @@ func (self *Client) Commit(message string) error {
 }
 
 func (self *Client) Add(filename string) error {
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}
@@ -114,6 +124,9 @@ func (self *Client) Add(filename string) error {
 
 
 func (self *Client) Push() error {
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
 	er:=self.Pull()
 	if er!=nil{
 		return er
@@ -182,8 +195,6 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 			succeed = false
 		}
 	}*/
-
-	// TODO: write self.addressList back to metadata file
 	return succeed, liveBitMap
 }
 
@@ -215,8 +226,10 @@ func (self *Client) comeAlive() {
 	pushes  := Push{Change: prepare, Patch: []byte{}}
 	bitMap  := make([]bool, 0)
 
+	time.Sleep(time.Second)
 	for {
 		succeed, bitMap = self.sendPrepare(&prepare)
+		fmt.Println("Catching up")
 		if succeed {
 			break
 		} else {
@@ -299,6 +312,9 @@ func (self *Client) joinGroup(address string) bool {
 }
 
 func (self *Client) Revert(commit_id string)(error){
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}
@@ -308,6 +324,9 @@ func (self *Client) Revert(commit_id string)(error){
 }
 
 func (self *Client) Log()(error){
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}
@@ -316,6 +335,9 @@ func (self *Client) Log()(error){
 }
 
 func (self *Client) Status()(error){
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}

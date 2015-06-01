@@ -28,7 +28,16 @@ func VersionEquality(a, b Version) bool {
 	}
 }
 
-
+func IsServerRuning(address string) bool {
+	version := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: INVALIDIP}
+	succ    := false
+	e       := SendPrepare(address, &version, &succ)
+	if e != nil {
+		return false
+	} else {
+		return true
+	}
+}
 
 type Push struct {
 	// the verstion corresponded to this push

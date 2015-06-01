@@ -2,6 +2,7 @@ package zing
 
 import (
 	"sync"
+	"os"
 	"fmt"
 	"net"
 	"net/rpc"
@@ -35,7 +36,11 @@ var (
 
 func InitializeServer() *Server {
 	server := Server{}
-	server.id = getOwnIndex()
+	if _, err := os.Stat(METADATA_FILE); os.IsNotExist(err) {
+		panic("initialize the repository first")
+	} else {
+		server.id = getOwnIndex()
+	}
 	addrs, _ := net.InterfaceAddrs()
     for _, address := range addrs {
         if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -48,12 +53,15 @@ func InitializeServer() *Server {
 
 	server.preQueue = make([]Version, 0)
 	server.lock     = &sync.Mutex{}
-	// need to be changed
-	server.ready    = true
+	server.ready    = false
 	return &server
 }
 
 func StartServer(instance *Server) error {
+	client := InitializeClient()
+	if client.id == -1 {
+		panic("initialize the repository first")
+	}
 	server := rpc.NewServer()
 	server.Register(instance)
 	
@@ -61,6 +69,8 @@ func StartServer(instance *Server) error {
 	if e != nil {
 		return e
 	}
+	
+	go client.comeAlive()
 	return http.Serve(l, server)
 }
 
