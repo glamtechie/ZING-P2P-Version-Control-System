@@ -268,6 +268,7 @@ func (self *Client) joinGroup(address string) bool {
 		if err != nil {
 			return false
 		}
+		self.addressList = ipList
 		succeed, bitMap = self.sendPrepare(&prepare)
 		if succeed {
 			break
