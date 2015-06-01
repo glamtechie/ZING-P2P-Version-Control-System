@@ -21,15 +21,12 @@ type Client struct {
 func InitializeClient() *Client {
 	client := Client{}
 	if _, err := os.Stat(METADATA_FILE); os.IsNotExist(err) {
-    	data:=Data{Version{-1,-1,""},make([]string,0)}
-    	e := writeFile(&data, METADATA_FILE)
-    	if e!=nil{
-    		panic(e)
-    	}
+		client.id = -1
+		client.addressList = make([]string, 0)
+	} else {
+		client.id = getOwnIndex()
+		client.addressList = getAddressList()
 	}
-	client.id = getOwnIndex()
-	client.addressList = getAddressList()
-
 	addrs, _ := net.InterfaceAddrs()
     for _, address := range addrs {
         if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -47,19 +44,30 @@ func (self *Client) Init() error{
 	if e!=nil{
 		return e
 	}
-
+    data  := Data{Version{-1,-1,""},make([]string,0)}
+    e 	   = writeFile(&data, METADATA_FILE)
+    if e != nil{
+    	panic(e)
+    }
+    setAddressList([]string{self.server})
+    
 	setOwnIndex(0)
-	writeLog(Push{Version{-1,-1,getAddressList()[0]},make([]byte,0)})
+	writeLog(Push{Version{-1,-1, self.server}, make([]byte,0)})
 	setVersion(0)
 	return nil
 }
 
 func (self *Client) Clone(ip string) error{
 	e:=zing_init(0)
-	if e!=nil{
+	if e != nil{
 		return e
 	}
-	writeLog(Push{Version{-1,-1,getAddressList()[0]},make([]byte,0)})
+	data := Data{Version{-1,-1,""},make([]string,0)}
+    e 	  = writeFile(&data, METADATA_FILE)
+    if e != nil {
+    	panic(e)
+    }
+	writeLog(Push{Version{-1,-1, self.server},make([]byte,0)})
 	setVersion(0)
 	status:=self.joinGroup(ip)
 	if status==false{
