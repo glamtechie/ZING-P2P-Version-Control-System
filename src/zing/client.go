@@ -3,6 +3,7 @@ package zing
 import (
 	"fmt"
 	"net"
+	"os"
 )
 
 type Client struct {
@@ -21,7 +22,7 @@ func InitializeClient() *Client {
 	client := Client{}
 	if _, err := os.Stat(METADATA_FILE); os.IsNotExist(err) {
     	data:=Data{Version{-1,-1,""},make([]string,0)}
-    	e = writeFile(&data, METADATA_FILE)
+    	e := writeFile(&data, METADATA_FILE)
     	if e!=nil{
     		panic(e)
     	}
@@ -48,7 +49,7 @@ func (self *Client) Init() error{
 	}
 
 	setOwnIndex(0)
-	writeLog(Version{-1,-1,getAddressList()[0]},make([]byte,0))
+	writeLog(Push{Version{-1,-1,getAddressList()[0]},make([]byte,0)})
 	setVersion(0)
 	return nil
 }
@@ -58,7 +59,7 @@ func (self *Client) Clone(ip string) error{
 	if e!=nil{
 		return e
 	}
-	writeLog(Version{-1,-1,getAddressList()[0]},make([]byte,0))
+	writeLog(Push{Version{-1,-1,getAddressList()[0]},make([]byte,0)})
 	setVersion(0)
 	status:=self.joinGroup(ip)
 	if status==false{
