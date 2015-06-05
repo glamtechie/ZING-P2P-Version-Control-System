@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"time"
+	"sync"
 )
 
 type Client struct {
@@ -204,14 +205,19 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 		panic("Node number not match")
 	}
 
+	var group sync.WaitGroup
 	// send push changes from last to first
 	for i := len(self.addressList) - 1; i >= 0; i-- {
 		if liveBitMap[i] {
 			address := self.addressList[i]
 			succ    := false
-			SendPush(address, push, &succ)
+			group.Add(1)
+			go SendPush(address, push, &succ)
 		}
 	}
+	
+	group.Wait()
+	return
 }
 
 func (self *Client) sendAbort(liveBitMap []bool, cversion int) {
