@@ -2,6 +2,7 @@ package zing
 
 import (
 	"net/rpc"
+	"sync"
 )
 
 
@@ -52,17 +53,18 @@ func SendPrepare(address string, prepare *Version, succ *bool) error {
 	conn, e := rpc.DialHTTP("tcp", address)
 	if e != nil {
         	return e
-    	}
+    }
 
     	e = conn.Call("Server.ReceivePrepare", prepare, succ)
     	if e != nil {
         	conn.Close()
         	return e
     	}
-    	return conn.Close()
+    return conn.Close()
 }
 
-func SendPush(address string, push *Push, succ *bool) error {
+func SendPush(address string, push *Push, succ *bool, w *sync.WaitGroup) error {
+	defer w.Done()
 	conn, e := rpc.DialHTTP("tcp", address)
 	if e != nil {
         	return e

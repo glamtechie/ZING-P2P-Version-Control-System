@@ -212,7 +212,7 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 			address := self.addressList[i]
 			succ    := false
 			group.Add(1)
-			go SendPush(address, push, &succ)
+			go SendPush(address, push, &succ, &group)
 		}
 	}
 	
