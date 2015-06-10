@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"time"
 	"sync"
+	"time"
 )
 
 type Client struct {
 	// my index number
-	id	int
+	id int
 
 	// the ip addres of my server
-	server	string
+	server string
 
 	// the ip address of all the server
 	addressList []string
 }
-
 
 func InitializeClient() *Client {
 	client := Client{}
@@ -30,32 +29,32 @@ func InitializeClient() *Client {
 		client.addressList = getAddressList()
 	}
 	addrs, _ := net.InterfaceAddrs()
-    for _, address := range addrs {
-        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-            if ipnet.IP.To4() != nil {
-            	client.server = ipnet.IP.String() + ":27321"
-            	break
-            }
-        }
-    }
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				client.server = ipnet.IP.String() + ":27321"
+				break
+			}
+		}
+	}
 	return &client
 }
 
-func (self *Client) Init() error{
-	e:=zing_init(0)
-	if e!=nil{
+func (self *Client) Init() error {
+	e := zing_init(0)
+	if e != nil {
 		return e
 	}
-    data := Data{Version{-1,-1,""},make([]string,0)}
-    e 	  = writeFile(&data, METADATA_FILE)
-    if e != nil{
-    	panic(e)
-    }
-    setAddressList([]string{self.server})
+	data := Data{Version{-1, -1, ""}, make([]string, 0)}
+	e = writeFile(&data, METADATA_FILE)
+	if e != nil {
+		panic(e)
+	}
+	setAddressList([]string{self.server})
 
 	setOwnIndex(0)
-	log  := []Push{ Push{Version{-1,-1, ""}, make([]byte,0)} }
-	e     = writeFile(&log, LOG_FILE)
+	log := []Push{Push{Version{-1, -1, ""}, make([]byte, 0)}}
+	e = writeFile(&log, LOG_FILE)
 	if e != nil {
 		panic(e)
 	}
@@ -63,24 +62,24 @@ func (self *Client) Init() error{
 	return nil
 }
 
-func (self *Client) Clone(ip string) error{
-	e:=zing_init(0)
-	if e != nil{
+func (self *Client) Clone(ip string) error {
+	e := zing_init(0)
+	if e != nil {
 		return e
 	}
-	data := Data{Version{-1,-1,""},make([]string,0)}
-    e 	  = writeFile(&data, METADATA_FILE)
-    if e != nil {
-    	panic(e)
-    }
-	log  := []Push{ Push{Version{-1,-1, ""}, make([]byte,0)} }
-	e     = writeFile(&log, LOG_FILE)
+	data := Data{Version{-1, -1, ""}, make([]string, 0)}
+	e = writeFile(&data, METADATA_FILE)
+	if e != nil {
+		panic(e)
+	}
+	log := []Push{Push{Version{-1, -1, ""}, make([]byte, 0)}}
+	e = writeFile(&log, LOG_FILE)
 	if e != nil {
 		panic(e)
 	}
 	setVersion(0)
-	status:=self.joinGroup(ip)
-	if status==false{
+	status := self.joinGroup(ip)
+	if status == false {
 		return fmt.Errorf("Cannot clone")
 	}
 	return nil
@@ -123,23 +122,31 @@ func (self *Client) Add(filename string) error {
 	return e
 }
 
-
 func (self *Client) Push() error {
 	if !IsServerRuning(self.server) {
 		return fmt.Errorf("Server is not running")
 	}
-	er:=self.Pull()
-	if er!=nil{
+	
+	er := self.Pull()  // pull before push
+	if er != nil {
 		return er
 	}
-	status := false
+
+	status := false		// check the prepare queue
 	CheckPrepareQueue(self.server, self.server, &status)
 	if status == false {
 		return fmt.Errorf("Another push in progress, please pull and try again!")
 	}
 
-	cversion     := getVersion()
-	prepare      := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
+	e, data := zing_make_patch_for_push("master", "patch")
+	if e != nil {
+		return e
+	} else if len(data) == 0 {		// don't need to issue a push if it doesn't need to
+		return fmt.Errorf("Already up to data")
+	}
+
+	cversion := getVersion()
+	prepare  := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
 	succ, bitMap := self.sendPrepare(&prepare)
 	count := 0
 	for i := 0; i < len(bitMap); i++ {
@@ -147,58 +154,62 @@ func (self *Client) Push() error {
 			count++
 		}
 	}
-	if (succ == false) || (count <= len(bitMap) / 2) {
-		fmt.Println("Push failed, abort")
-		self.sendAbort(bitMap, cversion)
-		return nil
-	}
-	e, data := zing_make_patch_for_push("master", "patch")
-	if e != nil{
-		return e
-	}
 
-	setVersion(cversion + 1)
-	self.sendPush(&Push{Change: prepare, Patch: data}, bitMap)
+	var bundle Asynchronous = Asynchronous{self, nil, bitMap}
+	if (succ == false) || (count <= len(bitMap)/2) {
+		fmt.Println("Push failed, abort")
+		//self.sendPush(&Push{Change: prepare, Patch: make([]byte, 0)}, bitMap)
+		bundle.Message = &Push{Change: prepare, Patch: make([]byte, 0)}
+	} else { 
+		setVersion(cversion + 1)
+		//self.sendPush(&Push{Change: prepare, Patch: data}, bitMap)
+		bundle.Message = &Push{Change: prepare, Patch: data}
+	}
+	succeed := false
+	SendPushRequest(self.server, &bundle, &succeed)
 	return nil
 }
 
-
 func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
-	firstNode  := false
-	//firstIndex := -1
-	succeed    := false
-	liveBitMap := make([]bool, len(self.addressList))
+	resultMap := make([]int, len(self.addressList))
 
 	// send prepare message from first to last
+	var group sync.WaitGroup
 	for i := 0; i < len(self.addressList); i++ {
 		address := self.addressList[i]
-		succ    := false
-		e       := SendPrepare(address, prepare, &succ)
+		group.Add(1)
+		resultMap[i] = -1
+		go SendPrepare(address, prepare, &resultMap[i], &group)
+	}
+	group.Wait()
 
-		if e != nil {
-			liveBitMap[i] = false
-		} else {
-			if !firstNode {
-				succeed    = succ
-				firstNode  = false
-				//firstIndex = i
-			}
+	liveBitMap := make([]bool, len(self.addressList))
+	first := true
+	index := -1
+	for i := 0; i < len(self.addressList); i++ {
+		if resultMap[i] != -1 {
 			liveBitMap[i] = true
+			if first {
+				index = i
+				first = false
+			}
+		} else {
+			liveBitMap[i] = false
 		}
 	}
 
-	/*
-	if firstIndex != -1 {
+	fmt.Println(resultMap)
+	var succeed bool = false
+	if index != -1 {
+		succeed = (resultMap[index] == 1)
 		version := Version{NodeIndex: -1, VersionIndex: -1}
-		succ    := false
-		e       := SendPrepare(self.addressList[firstIndex], &version, &succ)
+		e := SendPrepare(self.addressList[index], &version, &index, &group)
 		if e != nil {
 			succeed = false
 		}
-	}*/
+	}
 	return succeed, liveBitMap
 }
-
 
 func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 	if len(liveBitMap) != len(self.addressList) {
@@ -210,27 +221,21 @@ func (self *Client) sendPush(push *Push, liveBitMap []bool) {
 	for i := len(self.addressList) - 1; i >= 0; i-- {
 		if liveBitMap[i] {
 			address := self.addressList[i]
-			succ    := false
+			succ := false
 			group.Add(1)
 			go SendPush(address, push, &succ, &group)
 		}
 	}
-	
+
 	group.Wait()
 	return
 }
 
-func (self *Client) sendAbort(liveBitMap []bool, cversion int) {
-	ar := make([]byte, 0)
-	vr := Version{NodeIndex: self.id, VersionIndex: cversion, NodeAddress: self.server}
-	self.sendPush(&Push{Change: vr, Patch: ar}, liveBitMap)
-}
-
 func (self *Client) comeAlive() {
- 	succeed := false
+	succeed := false
 	prepare := Version{NodeIndex: self.id, VersionIndex: -1, NodeAddress: self.server}
-	pushes  := Push{Change: prepare, Patch: []byte{}}
-	bitMap  := make([]bool, 0)
+	pushes := Push{Change: prepare, Patch: []byte{}}
+	bitMap := make([]bool, 0)
 
 	time.Sleep(time.Second)
 	for {
@@ -255,7 +260,7 @@ func (self *Client) comeAlive() {
 		}
 	}
 
-	ipList  := getAddressList()
+	ipList := getAddressList()
 	resList := make([]string, 0)
 	for key, ip := range ipList {
 		if bitMap[key] {
@@ -284,17 +289,16 @@ func (self *Client) comeAlive() {
 	return
 }
 
-
 func (self *Client) joinGroup(address string) bool {
- 	succeed := false
+	succeed := false
 	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
-	pushes  := Push{Change: prepare, Patch: []byte{}}
-	ipList  := make([]string, 0)
-	bitMap  := make([]bool, 0)
+	pushes := Push{Change: prepare, Patch: []byte{}}
+	ipList := make([]string, 0)
+	bitMap := make([]bool, 0)
 
 	for {
-		ipList  = make([]string, 0)
-		err    := RequestAddressList(address, make([]string, 0), &ipList)
+		ipList = make([]string, 0)
+		err := RequestAddressList(address, make([]string, 0), &ipList)
 		if err != nil {
 			return false
 		}
@@ -329,7 +333,7 @@ func (self *Client) joinGroup(address string) bool {
 	return true
 }
 
-func (self *Client) Revert(commit_id string)(error){
+func (self *Client) Revert(commit_id string) error {
 	if !IsServerRuning(self.server) {
 		return fmt.Errorf("Server is not running")
 	}
@@ -337,30 +341,28 @@ func (self *Client) Revert(commit_id string)(error){
 		return fmt.Errorf("Not Initialized")
 	}
 
-	e:=zing_revert(commit_id)
+	e := zing_revert(commit_id)
 	return e
 }
 
-func (self *Client) Log()(error){
+func (self *Client) Log() error {
 	if !IsServerRuning(self.server) {
 		return fmt.Errorf("Server is not running")
 	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}
-	e:=zing_log()
+	e := zing_log()
 	return e
 }
 
-func (self *Client) Status()(error){
+func (self *Client) Status() error {
 	if !IsServerRuning(self.server) {
 		return fmt.Errorf("Server is not running")
 	}
 	if self.id == -1 {
 		return fmt.Errorf("Not Initialized")
 	}
-	e:=zing_status()
+	e := zing_status()
 	return e
 }
-
-

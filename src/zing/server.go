@@ -203,12 +203,37 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 }
 
 /*
+ RPC function: AsynchronousPush
+*/
+func (self *Server) AsynchronousPush(bundle *Asynchronous, succ *bool) error {
+	// this function should only called by its own client
+	if bundle.Object.server != self.address {
+		panic("In AsynchronousPush: Not come from myself")
+	}
+
+	var group sync.WaitGroup
+	// send push changes from last to first
+	for i := len(bundle.Object.addressList) - 1; i >= 0; i-- {
+		if bundle.LiveMap[i] {
+			address := bundle.Object.addressList[i]
+			succeed := false
+			group.Add(1)
+			go SendPush(address, bundle.Message, &succeed, &group)
+		}
+	}
+
+	// here we don't wait the go routine to finish.
+	*succ = true
+	return nil
+}
+
+/*
  RPC function: ReceiveReady
 */
 func (self *Server) ReceiveReady(address string, succ *bool) error {
 	// this function should only called by its own client
 	if address != self.address {
-		panic("In receive ready: Not come from my self")
+		panic("In receive ready: Not come from myself")
 	}
 
 	self.lock.Lock()
