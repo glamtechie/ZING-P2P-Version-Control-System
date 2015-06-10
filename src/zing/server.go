@@ -18,9 +18,9 @@ type Server struct {
 	address  string
 
 	// the prepare message queue
-	preQueue []Version	
+	preQueue []Version
 
-	// the lock for changing prepare message queue 
+	// the lock for changing prepare message queue
 	lock	 *sync.Mutex
 
 	// ready to serve or not
@@ -34,7 +34,7 @@ var (
 )
 
 
-func InitializeServer() *Server {
+func InitializeServer(port string) *Server {
 	server := Server{}
 	if _, err := os.Stat(METADATA_FILE); os.IsNotExist(err) {
 		panic("initialize the repository first")
@@ -45,7 +45,7 @@ func InitializeServer() *Server {
     for _, address := range addrs {
         if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
             if ipnet.IP.To4() != nil {
-            	server.address = ipnet.IP.String() + ":27321"
+            	server.address = ipnet.IP.String() + port
             	break
             }
         }
@@ -64,12 +64,12 @@ func StartServer(instance *Server) error {
 	}
 	server := rpc.NewServer()
 	server.Register(instance)
-	
+
 	l, e := net.Listen("tcp", instance.address)
 	if e != nil {
 		return e
 	}
-	
+
 	go client.comeAlive()
 	return http.Serve(l, server)
 }
@@ -121,7 +121,7 @@ func processChanges(push Push, index int) []Push {
 		cutPoint := 1
 		for i := 1; i < len(IndexList); i++ {
 			if IndexList[i] - IndexList[i - 1] != 1 {
-				cutPoint = i 
+				cutPoint = i
 				break
 			}
 		}
@@ -153,9 +153,9 @@ func commitChanges(pushes []Push, id int) error {
 
 		var err error
 		if push.Change.NodeIndex == id {
-			err = zing_process_push_at_src("patch", push.Patch)	
+			err = zing_process_push_at_src("patch", push.Patch)
 		} else {
-			err = zing_process_push("patch", push.Patch)	
+			err = zing_process_push("patch", push.Patch)
 		}
 
 		if err != nil {
@@ -173,7 +173,7 @@ func commitChanges(pushes []Push, id int) error {
 */
 func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	var index int = -1
-	var pushes []Push 
+	var pushes []Push
 
 	fmt.Printf("Receive the Push from Node: %d, Version: %d\n", push.Change.NodeIndex, push.Change.VersionIndex)
 	fmt.Printf("Patch length: %d\n", len(push.Patch))
@@ -192,7 +192,7 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 	} else {
 		pushes = processChanges(*push, index)
 	}
-	
+
 	// commit the changes
 	commitChanges(pushes, self.id)
 	if len(pushes) > 0 {
@@ -252,7 +252,7 @@ func (self *Server) ReturnAddressList(argList []string, resList *[]string) error
 	} else {
 		*resList = list
 	}
-	
+
 	return nil
 }
 
@@ -286,7 +286,7 @@ func (self *Server) ReturnMissingData(ver Version, pushes *[]Push) error {
 		// I surpass the sender.
 		tmpList = make([]Push, 1)
 		tmpList[0].Change = localVer
-		tmpList[0].Patch  = make([]byte, 0) 
+		tmpList[0].Patch  = make([]byte, 0)
 		*pushes = tmpList
 	} else {
 		*pushes = tmpList
