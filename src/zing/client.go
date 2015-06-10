@@ -28,7 +28,7 @@ func InitializeClient() *Client {
 	} else {
 		client.id = getOwnIndex()
 		client.addressList = getAddressList()
-		client.server = client.addressList(client.id)
+		client.server = client.addressList[client.id]
 	}
 
 	return &client
@@ -49,7 +49,7 @@ func (self *Client) Init(port string) error {
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				client.server = ipnet.IP.String() + port
+				self.server = ipnet.IP.String() + port
 				break
 			}
 		}
@@ -86,7 +86,7 @@ func (self *Client) Clone(ip, port string) error {
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				client.server = ipnet.IP.String() + port
+				self.server = ipnet.IP.String() + port
 				break
 			}
 		}
