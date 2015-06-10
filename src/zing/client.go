@@ -24,23 +24,17 @@ func InitializeClient() *Client {
 	if _, err := os.Stat(METADATA_FILE); os.IsNotExist(err) {
 		client.id = -1
 		client.addressList = make([]string, 0)
+		client.server = ""
 	} else {
 		client.id = getOwnIndex()
 		client.addressList = getAddressList()
+		client.server = client.addressList(client.id)
 	}
-	addrs, _ := net.InterfaceAddrs()
-	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				client.server = ipnet.IP.String() + ":27321"
-				break
-			}
-		}
-	}
+
 	return &client
 }
 
-func (self *Client) Init() error {
+func (self *Client) Init(port string) error {
 	e := zing_init(0)
 	if e != nil {
 		return e
@@ -49,6 +43,16 @@ func (self *Client) Init() error {
 	e = writeFile(&data, METADATA_FILE)
 	if e != nil {
 		panic(e)
+	}
+
+	addrs, _ := net.InterfaceAddrs()
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				client.server = ipnet.IP.String() + port
+				break
+			}
+		}
 	}
 	setAddressList([]string{self.server})
 
@@ -62,7 +66,7 @@ func (self *Client) Init() error {
 	return nil
 }
 
-func (self *Client) Clone(ip string) error {
+func (self *Client) Clone(ip, port string) error {
 	e := zing_init(0)
 	if e != nil {
 		return e
@@ -76,6 +80,16 @@ func (self *Client) Clone(ip string) error {
 	e = writeFile(&log, LOG_FILE)
 	if e != nil {
 		panic(e)
+	}
+
+	addrs, _ := net.InterfaceAddrs()
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				client.server = ipnet.IP.String() + port
+				break
+			}
+		}
 	}
 	setVersion(0)
 	status := self.joinGroup(ip)

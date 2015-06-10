@@ -1,30 +1,29 @@
 package zing
 
 import (
-	"sync"
-	"os"
 	"fmt"
 	"net"
-	"net/rpc"
 	"net/http"
+	"net/rpc"
+	"os"
+	"sync"
 )
-
 
 type Server struct {
 	// my index number
-	id	 int
+	id int
 
 	// my ip address
-	address  string
+	address string
 
 	// the prepare message queue
 	preQueue []Version
 
 	// the lock for changing prepare message queue
-	lock	 *sync.Mutex
+	lock *sync.Mutex
 
 	// ready to serve or not
-	ready	 bool
+	ready bool
 }
 
 // global variable
@@ -32,7 +31,6 @@ var (
 	GlobalBuffer []Push
 	IndexList    []int
 )
-
 
 func InitializeServer(port string) *Server {
 	server := Server{}
@@ -42,18 +40,18 @@ func InitializeServer(port string) *Server {
 		server.id = getOwnIndex()
 	}
 	addrs, _ := net.InterfaceAddrs()
-    for _, address := range addrs {
-        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-            if ipnet.IP.To4() != nil {
-            	server.address = ipnet.IP.String() + port
-            	break
-            }
-        }
-    }
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				server.address = ipnet.IP.String() + ":" + port
+				break
+			}
+		}
+	}
 
 	server.preQueue = make([]Version, 0)
-	server.lock     = &sync.Mutex{}
-	server.ready    = false
+	server.lock = &sync.Mutex{}
+	server.ready = false
 	return &server
 }
 
@@ -73,7 +71,6 @@ func StartServer(instance *Server) error {
 	go client.comeAlive()
 	return http.Serve(l, server)
 }
-
 
 /*
  RPC function: ReceivePrepare
@@ -114,27 +111,26 @@ func processChanges(push Push, index int) []Push {
 	if insertPoint == -1 {
 		insertPoint = len(IndexList)
 	}
-	IndexList    = append(IndexList[:insertPoint],    append([]int{index}, IndexList[insertPoint:]...)...)
+	IndexList = append(IndexList[:insertPoint], append([]int{index}, IndexList[insertPoint:]...)...)
 	GlobalBuffer = append(GlobalBuffer[:insertPoint], append([]Push{push}, GlobalBuffer[insertPoint:]...)...)
 
 	if IndexList[0] == 0 {
 		cutPoint := 1
 		for i := 1; i < len(IndexList); i++ {
-			if IndexList[i] - IndexList[i - 1] != 1 {
+			if IndexList[i]-IndexList[i-1] != 1 {
 				cutPoint = i
 				break
 			}
 		}
 		results := GlobalBuffer[:cutPoint]
 
-		IndexList    = IndexList[cutPoint:]
+		IndexList = IndexList[cutPoint:]
 		GlobalBuffer = GlobalBuffer[cutPoint:]
 		return results
 	} else {
 		return make([]Push, 0)
 	}
 }
-
 
 func commitChanges(pushes []Push, id int) error {
 	// commit the pushes to the file system
@@ -282,7 +278,7 @@ func (self *Server) ReturnMissingData(ver Version, pushes *[]Push) error {
 		return nil
 	}
 
-	tmpList  := getPushDiff(ver)
+	tmpList := getPushDiff(ver)
 	localVer := getLastVer()
 	fmt.Println("Missing data request: local version", localVer, "remote version", ver)
 
@@ -290,13 +286,10 @@ func (self *Server) ReturnMissingData(ver Version, pushes *[]Push) error {
 		// I surpass the sender.
 		tmpList = make([]Push, 1)
 		tmpList[0].Change = localVer
-		tmpList[0].Patch  = make([]byte, 0)
+		tmpList[0].Patch = make([]byte, 0)
 		*pushes = tmpList
 	} else {
 		*pushes = tmpList
 	}
 	return nil
 }
-
-
-
