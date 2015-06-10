@@ -3,6 +3,7 @@ package zing
 import (
 	"net/rpc"
 	"sync"
+	"fmt"
 )
 
 const (
@@ -100,11 +101,13 @@ func SetReady(address, ip string, succ *bool) error {
 }
 
 // for asynchronous Push
-type Asynchronous struct {
+type Asynchronous struct {	
 	// the client object
-	Object 	*Client
+	Index int
+	// the addresslist
+	AddressList []string
 	// the push message
-	Message *Push
+	Message Push
 	// the live bit map
 	LiveMap []bool
 }
@@ -112,11 +115,13 @@ type Asynchronous struct {
 func SendPushRequest(address string, bundle *Asynchronous, succ *bool) error {
 	conn, e := rpc.DialHTTP("tcp", address)
 	if e != nil {
+		fmt.Println("connection error")
 		return e
 	}
 
 	e = conn.Call("Server.AsynchronousPush", bundle, succ)
 	if e != nil {
+		fmt.Println("call error")
 		conn.Close()
 		return e
 	}

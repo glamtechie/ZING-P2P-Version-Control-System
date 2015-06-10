@@ -155,18 +155,22 @@ func (self *Client) Push() error {
 		}
 	}
 
-	var bundle Asynchronous = Asynchronous{self, nil, bitMap}
+	var bundle Asynchronous = Asynchronous{self.id, self.addressList, Push{}, bitMap}
 	if (succ == false) || (count <= len(bitMap)/2) {
-		fmt.Println("Push failed, abort")
+		fmt.Println("simultaneous push going on, please wait and push again")
 		//self.sendPush(&Push{Change: prepare, Patch: make([]byte, 0)}, bitMap)
-		bundle.Message = &Push{Change: prepare, Patch: make([]byte, 0)}
+		bundle.Message = Push{Change: prepare, Patch: make([]byte, 0)}
 	} else { 
 		setVersion(cversion + 1)
 		//self.sendPush(&Push{Change: prepare, Patch: data}, bitMap)
-		bundle.Message = &Push{Change: prepare, Patch: data}
+		bundle.Message = Push{Change: prepare, Patch: data}
 	}
+	
 	succeed := false
-	SendPushRequest(self.server, &bundle, &succeed)
+	e = SendPushRequest(self.server, &bundle, &succeed)
+	if e != nil {
+		return fmt.Errorf("RPC function failed")
+	}
 	return nil
 }
 
@@ -202,7 +206,7 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 	var succeed bool = false
 	if index != -1 {
 		succeed = (resultMap[index] == 1)
-		version := Version{NodeIndex: -1, VersionIndex: -1}
+		version := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: INVALIDIP}
 		group.Add(1)
 		e := SendPrepare(self.addressList[index], &version, make([]int, 1), 0, &group)
 		if e != nil {
