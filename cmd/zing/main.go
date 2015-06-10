@@ -11,9 +11,6 @@ func runPrompt (client *zing.Client, cmd string){
 	var v error
 	switch cmd {
 
-	case "init":
-		v=client.Init()
-		logError(v)
 	case "log":
 		v=client.Log()
 		logError(v)
@@ -35,6 +32,9 @@ func runPrompt (client *zing.Client, cmd string){
 func runCmd(client *zing.Client, cmd string, args []string){
 	var v error
 	switch cmd{
+	case "init":
+		v=client.Init(args[0])
+		logError(v)
 	case "add":
 		v=client.Add(args[0])
 		logError(v)
@@ -42,7 +42,7 @@ func runCmd(client *zing.Client, cmd string, args []string){
 		v=client.Revert(args[0])
 		logError(v)
 	case "clone":
-		v=client.Clone(args[0])
+		v=client.Clone(args[0], args[1])
 		logError(v)
 	case "commit":
 		v=client.Commit(args[0])
