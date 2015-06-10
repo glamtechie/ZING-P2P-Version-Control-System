@@ -155,18 +155,21 @@ func (self *Client) Push() error {
 		}
 	}
 
-	var bundle Asynchronous = Asynchronous{self, nil, bitMap}
+	var bundle Asynchronous = Asynchronous{self.id, self.addressList, Push{}, bitMap}
 	if (succ == false) || (count <= len(bitMap)/2) {
-		fmt.Println("Push failed, abort")
+		fmt.Println("simultaneous push going on, please wait and push again")
 		//self.sendPush(&Push{Change: prepare, Patch: make([]byte, 0)}, bitMap)
-		bundle.Message = &Push{Change: prepare, Patch: make([]byte, 0)}
+		bundle.Message = Push{Change: prepare, Patch: make([]byte, 0)}
 	} else { 
 		setVersion(cversion + 1)
 		//self.sendPush(&Push{Change: prepare, Patch: data}, bitMap)
-		bundle.Message = &Push{Change: prepare, Patch: data}
+		bundle.Message = Push{Change: prepare, Patch: data}
 	}
 	succeed := false
-	SendPushRequest(self.server, &bundle, &succeed)
+	e = SendPushRequest(self.server, &bundle, &succeed)
+	if e != nil {
+		return fmt.Errorf("RPC function failed")
+	}
 	return nil
 }
 

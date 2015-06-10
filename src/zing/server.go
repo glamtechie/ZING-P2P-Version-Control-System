@@ -207,21 +207,25 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 */
 func (self *Server) AsynchronousPush(bundle *Asynchronous, succ *bool) error {
 	// this function should only called by its own client
-	if bundle.Object.server != self.address {
+	fmt.Println("In the beginning of the rpc function")
+	if bundle.AddressList[bundle.Index] != self.address {
 		panic("In AsynchronousPush: Not come from myself")
 	}
 
 	var group sync.WaitGroup
 	// send push changes from last to first
-	for i := len(bundle.Object.addressList) - 1; i >= 0; i-- {
+	for i := len(bundle.AddressList) - 1; i >= 0; i-- {
 		if bundle.LiveMap[i] {
-			address := bundle.Object.addressList[i]
+			address := bundle.AddressList[i]
 			succeed := false
-			group.Add(1)
-			go SendPush(address, bundle.Message, &succeed, &group)
+			if address == self.address {
+				go self.ReceivePush(&bundle.Message, &succeed)
+			} else {
+				group.Add(1)
+				go SendPush(address, &bundle.Message, &succeed, &group)
+			}
 		}
 	}
-
 	// here we don't wait the go routine to finish.
 	*succ = true
 	return nil
