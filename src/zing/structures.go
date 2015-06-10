@@ -32,6 +32,7 @@ func IsServerRuning(address string) bool {
 	var group sync.WaitGroup
 	version := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: INVALIDIP}
 	value   := -1
+	group.Add(1)
 	e       := SendPrepare(address, &version, &value, &group)
 	if e != nil {
 		return false

@@ -203,6 +203,7 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 	if index != -1 {
 		succeed = (resultMap[index] == 1)
 		version := Version{NodeIndex: -1, VersionIndex: -1}
+		group.Add(1)
 		e := SendPrepare(self.addressList[index], &version, &index, &group)
 		if e != nil {
 			succeed = false
