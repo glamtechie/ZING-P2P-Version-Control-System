@@ -49,7 +49,7 @@ func (self *Client) Init(port string) error {
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				self.server = ipnet.IP.String() + port
+				self.server = ipnet.IP.String() + ":" + port
 				break
 			}
 		}
@@ -86,7 +86,7 @@ func (self *Client) Clone(ip, port string) error {
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				self.server = ipnet.IP.String() + port
+				self.server = ipnet.IP.String() + ":" + port
 				break
 			}
 		}
