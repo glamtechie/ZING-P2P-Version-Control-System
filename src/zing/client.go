@@ -165,6 +165,7 @@ func (self *Client) Push() error {
 		//self.sendPush(&Push{Change: prepare, Patch: data}, bitMap)
 		bundle.Message = Push{Change: prepare, Patch: data}
 	}
+	
 	succeed := false
 	e = SendPushRequest(self.server, &bundle, &succeed)
 	if e != nil {
@@ -205,7 +206,7 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 	var succeed bool = false
 	if index != -1 {
 		succeed = (resultMap[index] == 1)
-		version := Version{NodeIndex: -1, VersionIndex: -1}
+		version := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: INVALIDIP}
 		group.Add(1)
 		e := SendPrepare(self.addressList[index], &version, make([]int, 1), 0, &group)
 		if e != nil {
