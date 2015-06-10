@@ -31,9 +31,8 @@ func VersionEquality(a, b Version) bool {
 func IsServerRuning(address string) bool {
 	var group sync.WaitGroup
 	version := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: INVALIDIP}
-	value   := -1
 	group.Add(1)
-	e       := SendPrepare(address, &version, &value, &group)
+	e       := SendPrepare(address, &version, make([]int, 1), 0, &group)
 	if e != nil {
 		return false
 	} else {
@@ -49,7 +48,7 @@ type Push struct {
 	Patch []byte
 }
 
-func SendPrepare(address string, prepare *Version, indicate *int, w *sync.WaitGroup) error {
+func SendPrepare(address string, prepare *Version, array []int, index int, w *sync.WaitGroup) error {
 	defer w.Done()
 	conn, e := rpc.DialHTTP("tcp", address)
 	if e != nil {
@@ -64,9 +63,9 @@ func SendPrepare(address string, prepare *Version, indicate *int, w *sync.WaitGr
 	}
 
 	if succ {
-		*indicate = 1
+		array[index] = 1
 	} else {
-		*indicate = 0
+		array[index] = 0
 	}
 	return conn.Close()
 }

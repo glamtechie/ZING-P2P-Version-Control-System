@@ -179,7 +179,7 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 		address := self.addressList[i]
 		group.Add(1)
 		resultMap[i] = -1
-		go SendPrepare(address, prepare, &resultMap[i], &group)
+		go SendPrepare(address, prepare, resultMap, i, &group)
 	}
 	group.Wait()
 
@@ -204,7 +204,7 @@ func (self *Client) sendPrepare(prepare *Version) (bool, []bool) {
 		succeed = (resultMap[index] == 1)
 		version := Version{NodeIndex: -1, VersionIndex: -1}
 		group.Add(1)
-		e := SendPrepare(self.addressList[index], &version, &index, &group)
+		e := SendPrepare(self.addressList[index], &version, make([]int, 1), 0, &group)
 		if e != nil {
 			succeed = false
 		}
@@ -305,6 +305,7 @@ func (self *Client) joinGroup(address string) bool {
 		}
 		self.addressList = ipList
 		succeed, bitMap = self.sendPrepare(&prepare)
+		fmt.Println("something wrong")
 		if succeed {
 			break
 		} else {
