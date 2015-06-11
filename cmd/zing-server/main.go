@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 	"zing"
-    "flag"
-    "os"
 )
 
 func main(){

@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"io/ioutil"
-	"os"
-	"strconv"
 )
 
 const (
