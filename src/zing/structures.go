@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	INVALIDIP = "0.0.0.0:0"
+	INVALIDIP  = "0.0.0.0:0"
+	NEWJOINING = -27321
 )
 
 type Version struct {

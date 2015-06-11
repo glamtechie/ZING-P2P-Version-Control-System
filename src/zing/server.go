@@ -135,15 +135,22 @@ func processChanges(push Push, index int) []Push {
 func commitChanges(pushes []Push, id int) error {
 	// commit the pushes to the file system
 	for _, push := range pushes {
-		if push.Change.NodeIndex == -1 && push.Change.VersionIndex == -1 {
-			// this is a new node join.
-			ipList := getAddressList()
-			ipList = append(ipList, push.Change.NodeAddress)
-			setAddressList(ipList)
+		if len(push.Patch) == 0 {  // this is an abort message or an come alive message.
 			continue
 		}
-		if len(push.Patch) == 0 {
-			// this is an abort message or an come alive message.
+		if push.Change.NodeIndex == NEWJOINING && push.Change.VersionIndex == NEWJOINING {
+			// this is a new node join.
+			ipList  := getAddressList()
+			contain := false 
+			for _, value := range ipList {
+				if value == push.Change.NodeAddress {
+					contain = true	
+				}
+			}
+			if !contain {
+				ipList = append(ipList, push.Change.NodeAddress)
+				setAddressList(ipList)
+			} 
 			continue
 		}
 

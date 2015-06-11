@@ -140,11 +140,11 @@ func (self *Client) Push() error {
 	if !IsServerRuning(self.server) {
 		return fmt.Errorf("Server is not running")
 	}
-	
+	/*
 	er := self.Pull()  // pull before push
 	if er != nil {
 		return er
-	}
+	}*/
 
 	status := false		// check the prepare queue
 	CheckPrepareQueue(self.server, self.server, &status)
@@ -310,7 +310,7 @@ func (self *Client) comeAlive() {
 
 func (self *Client) joinGroup(address string) bool {
 	succeed := false
-	prepare := Version{NodeIndex: -1, VersionIndex: -1, NodeAddress: self.server}
+	prepare := Version{NodeIndex: NEWJOINING, VersionIndex: NEWJOINING, NodeAddress: self.server}
 	pushes := Push{Change: prepare, Patch: []byte{}}
 	ipList := make([]string, 0)
 	bitMap := make([]bool, 0)
@@ -349,6 +349,7 @@ func (self *Client) joinGroup(address string) bool {
 
 	succ := false
 	SetReady(self.server, self.server, &succ)
+	pushes.Patch = make([]byte, 11)
 	self.sendPush(&pushes, bitMap)
 	return true
 }
