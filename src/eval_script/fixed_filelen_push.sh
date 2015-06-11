@@ -1,26 +1,25 @@
 #!/bin/bash
 
-no=$1
+no=$2
 echo "no is"
 echo $no
 i="0"
 
+pushd . &> /dev/null
+cd "$1"
 while [ $i -lt $no ]
 do
-    pushd . &> /dev/null
-    cd "$i"
     dd if=/dev/zero of=file_to-create-$i bs=10k count=1000
-    go run $ZINGPATH/cmd/zing/main.go add file_to-create-$i
+    zing add file_to-create-$i
 
-    go run $ZINGPATH/cmd/zing/main.go commit -m "done"
+    zing commit -m "done"
 
-    go run $ZINGPATH/cmd/zing/main.go pull
+    zing pull
 
-    go run $ZINGPATH/cmd/zing/main.go push
+    time zing push
     
     i=$[$i+1]
-    port=$[$port+1]
-    popd &> /dev/null
 done
 
+popd &> /dev/null
 
