@@ -13,41 +13,6 @@ const (
 	LOG_FILE=".zing/log.txt"
 )
 
-
-func GetIPList(filename string) []string {
-	return []string{"192.168.1.123:27321", "192.168.1.135:27321", "192.168.1.134:27321"}
-}
-
-func GetIndexNumber(filename string) int {
-	return 2
-}
-
-func GetVersionNumber(filename string) int {
-	file, e := os.Open(filename)
-	if e != nil {
-		return 0
-	}
-	data := make([]byte, 16)
-	file.Read(data)
-
-	tail := bytes.Index(data, []byte{0})
-	result, _ := strconv.Atoi(string(data[:tail]))
-	file.Close()
-	return result
-}
-
-func SetVersionNumber(filename string, version int) {
-	file, e := os.Create(filename)
-	if e != nil {
-		panic("Can't open the metadata file")
-	}
-
-	data := []byte(strconv.Itoa(version))
-	file.Write(data)
-
-	return
-}
-
 //file stuff
 func writeLog(push Push){
 	var data []Push

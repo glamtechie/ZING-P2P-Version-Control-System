@@ -32,13 +32,16 @@ var (
 	IndexList    []int
 )
 
-func InitializeServer(port string) *Server {
+func InitializeServer() *Server {
 	server := Server{}
 	if _, err := os.Stat(METADATA_FILE); os.IsNotExist(err) {
 		panic("initialize the repository first")
 	} else {
 		server.id = getOwnIndex()
+		addressList := getAddressList()
+		server.address = addressList[server.id]
 	}
+	/*
 	addrs, _ := net.InterfaceAddrs()
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -47,7 +50,7 @@ func InitializeServer(port string) *Server {
 				break
 			}
 		}
-	}
+	}*/
 
 	server.preQueue = make([]Version, 0)
 	server.lock = &sync.Mutex{}
