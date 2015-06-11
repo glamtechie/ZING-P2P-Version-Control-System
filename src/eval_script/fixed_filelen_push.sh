@@ -1,9 +1,9 @@
 #!/bin/bash
 
-no=$2
+i=$2
+no=$3
 echo "no is"
 echo $no
-i="0"
 
 pushd . &> /dev/null
 cd "$1"
