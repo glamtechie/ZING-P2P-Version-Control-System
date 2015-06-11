@@ -1,6 +1,6 @@
 #!/bin/bash
 
-port=27321
+port=29000
 no=$1
 echo "no is"
 echo $no
@@ -13,7 +13,8 @@ do
     cd "$i"
     go run $ZINGPATH/cmd/zing/main.go clone $2  $port
     echo $2
-    go run $ZINGPATH/cmd/zing-server/main.go &
+    go run $ZINGPATH/cmd/zing-server/main.go $port  &
+    sleep 1
     i=$[$i+1]
     port=$[$port+1]
     popd &> /dev/null
