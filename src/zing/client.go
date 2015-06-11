@@ -277,7 +277,7 @@ func (self *Client) comeAlive() {
 			SetReady(self.server, self.server, &succ)
 			return
 		}
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Second * 5)
 	}
 
 	ipList := getAddressList()
@@ -330,7 +330,7 @@ func (self *Client) joinGroup(address string) bool {
 		} else {
 			self.sendPush(&pushes, bitMap)
 		}
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Second * 5)
 	}
 	for key, ip := range ipList {
 		if bitMap[key] {
