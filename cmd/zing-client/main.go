@@ -38,6 +38,9 @@ func runCmd(client *zing.Client, cmd string, args []string){
 	case "add":
 		v=client.Add(args[0])
 		logError(v)
+	case "rm":
+		v=client.Rm(args[0])
+		logError(v)
 	case "revert":
 		v=client.Revert(args[0])
 		logError(v)

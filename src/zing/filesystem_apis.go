@@ -14,7 +14,7 @@ const (
 )
 
 // this path need changes
-var absPath string = "/Users/Vector/Workspace/Spring 2015/Distributed System/P2P-Version-Control-System/src/zing/"
+var absPath string = "/Users/purvi/Desktop/CSE223B/P2P-Version-Control-System/src/zing/"
 
 func zing_init(id int) error {
 	out, err := exec.Command("/bin/sh", absPath+"filesystem_scripts/zing_init.sh", strconv.Itoa(id)).Output()
@@ -38,6 +38,16 @@ func zing_pull(branch string) error {
 
 func zing_add(filename string) error {
 	out, err := exec.Command("/bin/sh", absPath+"filesystem_scripts/zing_add.sh", filename).Output()
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	fmt.Printf("%s\n", out)
+	return nil
+}
+
+func zing_rm(filename string) error {
+	out, err := exec.Command("/bin/sh", absPath+"filesystem_scripts/zing_rm.sh", filename).Output()
 	if err != nil {
 		log.Fatal(err)
 		return err
