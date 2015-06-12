@@ -19,6 +19,9 @@ type Server struct {
 	// the prepare message queue
 	preQueue []Version
 
+	// the push received
+	pushBuffer []*Push
+
 	// the lock for changing prepare message queue
 	lock *sync.Mutex
 
@@ -26,11 +29,6 @@ type Server struct {
 	ready bool
 }
 
-// global variable
-var (
-	GlobalBuffer []Push
-	IndexList    []int
-)
 
 func InitializeServer() *Server {
 	server := Server{}
@@ -51,8 +49,9 @@ func InitializeServer() *Server {
 			}
 		}
 	}*/
-
 	server.preQueue = make([]Version, 0)
+	server.pushBuffer = make([]*Push, 0)
+
 	server.lock = &sync.Mutex{}
 	server.ready = false
 	return &server
@@ -98,38 +97,30 @@ func (self *Server) ReceivePrepare(prepare *Version, succ *bool) error {
 	} else {
 		*succ = false
 	}
-	self.preQueue = append(self.preQueue, *prepare)
+	self.preQueue   = append(self.preQueue, *prepare)
+	self.pushBuffer = append(self.pushBuffer, nil)
 	return nil
 }
 
-func processChanges(push Push, index int) []Push {
-	insertPoint := -1
-	for key, value := range IndexList {
-		if index < value {
-			insertPoint = key
-			break
-		}
+func processChanges(pushBuffer []*Push, index int) []Push {
+	if pushBuffer[index] == nil {
+		panic("Didn't receive the push")
 	}
 
-	if insertPoint == -1 {
-		insertPoint = len(IndexList)
-	}
-	IndexList = append(IndexList[:insertPoint], append([]int{index}, IndexList[insertPoint:]...)...)
-	GlobalBuffer = append(GlobalBuffer[:insertPoint], append([]Push{push}, GlobalBuffer[insertPoint:]...)...)
-
-	if IndexList[0] == 0 {
-		cutPoint := 1
-		for i := 1; i < len(IndexList); i++ {
-			if IndexList[i]-IndexList[i-1] != 1 {
-				cutPoint = i
+	if pushBuffer[0] != nil {
+		cutPoint := 0
+		for cutPoint < len(pushBuffer) {
+			if pushBuffer[cutPoint] == nil {
 				break
 			}
+			cutPoint += 1
 		}
-		results := GlobalBuffer[:cutPoint]
 
-		IndexList = IndexList[cutPoint:]
-		GlobalBuffer = GlobalBuffer[cutPoint:]
-		return results
+		result := make([]Push, 0)
+		for _, value := range pushBuffer[:cutPoint] {
+			result = append(result, *value)
+		}
+		return result
 	} else {
 		return make([]Push, 0)
 	}
@@ -189,20 +180,24 @@ func (self *Server) ReceivePush(push *Push, succ *bool) error {
 
 	for i, prepare := range self.preQueue {
 		if VersionEquality(prepare, push.Change) {
-			index = i
-			break
+			if self.pushBuffer[i] == nil {
+				self.pushBuffer[i] = push
+				index = i
+				break
+			}
 		}
 	}
 	if index == -1 {
 		panic("No match prepare message")
 	} else {
-		pushes = processChanges(*push, index)
+		pushes = processChanges(self.pushBuffer, index)
 	}
 
 	// commit the changes
 	commitChanges(pushes, self.id)
 	if len(pushes) > 0 {
 		self.preQueue = self.preQueue[len(pushes):]
+		self.pushBuffer = self.pushBuffer[len(pushes):]
 	}
 	*succ = true
 	return nil

@@ -15,7 +15,7 @@ do
     cd "$i"
     zing clone $cloneip  $port
     zing_server $port  &
-    sleep 5
+    sleep 2
     i=$[$i+1]
     port=$[$port+1]
     popd &> /dev/null
