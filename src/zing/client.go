@@ -136,6 +136,18 @@ func (self *Client) Add(filename string) error {
 	return e
 }
 
+func (self *Client) Rm(filename string) error {
+	if !IsServerRuning(self.server) {
+		return fmt.Errorf("Server is not running")
+	}
+	if self.id == -1 {
+		return fmt.Errorf("Not Initialized")
+	}
+
+	e := zing_rm(filename)
+	return e
+}
+
 func (self *Client) Push() error {
 	if !IsServerRuning(self.server) {
 		return fmt.Errorf("Server is not running")
