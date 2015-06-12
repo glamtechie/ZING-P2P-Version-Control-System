@@ -9,7 +9,7 @@ pushd . &> /dev/null
 cd "$1"
 while [ $i -lt $no ]
 do
-    dd if=/dev/zero of=file_to-create-$i bs=10k count=1000
+    dd if=/dev/zero of=file_to-create-$i bs=2k count=$4
     zing add file_to-create-$i
 
     zing commit -m "done"
